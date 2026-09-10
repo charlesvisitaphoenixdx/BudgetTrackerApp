@@ -341,6 +341,60 @@ button.primary:hover {
   margin-top: 8px;
 }
 
+.add-expense-trigger {
+  margin-bottom: 20px;
+}
+
+button.secondary {
+  padding: 9px 16px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button.secondary:hover {
+  background: var(--bg);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 12, 16, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+}
+
+.modal-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px 24px;
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+}
+
+.modal-panel h2 {
+  margin: 0 0 16px;
+  font-size: 16px;
+}
+
 /* Expense list */
 
 .expense-list {

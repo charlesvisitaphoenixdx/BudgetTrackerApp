@@ -29,9 +29,9 @@ Implemented under `src/pages/ConfigurationPage.jsx`:
 
 Implemented under `src/pages/ExpensesPage.jsx`:
 
-- Add an expense: Expense Type, Amount, Date, and Name are required;
-  Description is optional. Validated in `src/utils/expenseValidation.js`
-  (unit-tested).
+- A "+ Add Expense" button opens the entry form in a modal (Add Expense /
+  Cancel). Expense Type, Amount, Date, and Name are required; Description
+  is optional. Validated in `src/utils/expenseValidation.js` (unit-tested).
 - View logged expenses (most recent first) and delete them. Persisted to
   IndexedDB via `src/utils/expensesDb.js`.
 

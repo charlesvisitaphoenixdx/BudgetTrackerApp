@@ -47,7 +47,8 @@ BudgetTrackerApp/
 │   ├── components/
 │   │   ├── ExpenseTypesManager.jsx # Expense Types CRUD UI
 │   │   ├── PeriodSettings.jsx      # Start-day setting + period preview UI
-│   │   ├── ExpenseForm.jsx         # Add-expense form + validation wiring
+│   │   ├── Modal.jsx               # Generic dialog: Escape/backdrop-click to close, scroll lock
+│   │   ├── ExpenseForm.jsx         # Add-expense form + validation wiring (rendered inside Modal)
 │   │   └── ExpenseList.jsx         # Logged-expenses list + delete
 │   ├── hooks/
 │   │   ├── useLocalStorageState.js # useState, but persisted to localStorage
@@ -163,16 +164,30 @@ where an off-by-one silently ships.
   `useLocalStorageState`).
 - **`ConfigurationPage`**: the composition root for this screen — wires the
   two components above to their respective `localStorage`-backed state.
-- **`ExpenseForm`**: an uncontrolled-feeling but fully controlled form
-  (all fields in one `useState` object) that delegates all validation to
-  the pure `validateExpense()` function rather than duplicating rules
-  in the component. Renders a fallback "add an expense type first" message
-  in place of the form when `expenseTypes` is empty, with a callback prop
-  (`onGoToConfiguration`) to switch screens. Note that the Amount field's
-  native `type="number"` and the Name/Description fields' `maxLength`
-  attributes already block a lot of invalid input before `validateExpense`
-  ever sees it — its own checks for those cases exist as defense-in-depth
-  (see `docs/qa/QA-report-2026-09-10-expense-entry.md`), not because they're
+- **`Modal`**: a small generic dialog — dims the background, closes on
+  Escape or a click on the backdrop itself (a `onMouseDown` check that
+  `e.target === e.currentTarget`, so clicks inside the panel that bubble up
+  don't close it), and locks `document.body`'s scroll for as long as it's
+  mounted (restored via its `useEffect` cleanup). Takes `title` (used as
+  `aria-label`) and `onClose`; the caller owns the open/closed state and
+  conditionally renders `<Modal>` — the component has no internal
+  visibility state of its own.
+- **`ExpenseForm`**: rendered inside `<Modal>` by `ExpensesPage` when the
+  "+ Add Expense" button is clicked. A fully controlled form (all fields in
+  one `useState` object) that delegates all validation to the pure
+  `validateExpense()` function rather than duplicating rules in the
+  component. Takes `onSubmit` (async — awaited, and left to the parent to
+  decide what happens on success) and `onCancel` (wired to the modal's
+  Cancel button); since the component unmounts whenever the modal closes
+  (success or Cancel), it doesn't need to reset its own state — a fresh
+  mount always starts from `emptyForm()`. It no longer renders the
+  "no expense types" fallback itself; that moved up to `ExpensesPage` (see
+  below) since the form is only ever rendered once expense types exist.
+  Note that the Amount field's native `type="number"` and the
+  Name/Description fields' `maxLength` attributes already block a lot of
+  invalid input before `validateExpense` ever sees it — its own checks for
+  those cases exist as defense-in-depth (see
+  `docs/qa/QA-report-2026-09-10-expense-entry.md`), not because they're
   reachable through the form under normal use.
 - **`ExpenseList`**: sorts by date (descending) with `createdAt` as a
   tie-breaker; looks up each record's expense type by id from the current
@@ -181,7 +196,12 @@ where an off-by-one silently ships.
   `config.expenseTypes` via `useLocalStorageState` (read-only usage — the
   setter is discarded) so it always reflects Configuration's current state;
   since `App.jsx` unmounts/remounts pages on nav rather than keeping both
-  mounted, there's no live-sync concern between the two screens.
+  mounted, there's no live-sync concern between the two screens. Owns the
+  `showAddModal` boolean and renders either the "+ Add Expense" trigger
+  button or, when there are no expense types configured, the fallback
+  message + link to Configuration in its place (the trigger itself is
+  hidden in that case, rather than opening a modal with nothing useful in
+  it).
 
 ## Styling
 

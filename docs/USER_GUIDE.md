@@ -29,12 +29,11 @@ when you start the app.
 
 ### Adding an expense
 
-Fill in the **Add Expense** form:
+Click the **+ Add Expense** button to open the entry form in a pop-up.
+Fill in:
 
 - **Expense Type** (required) — pick from the categories you've set up in
-  Configuration. If you haven't set up any expense types yet, this form is
-  replaced with a message and a link that takes you straight to
-  Configuration so you can add one first.
+  Configuration.
 - **Amount** (required) — the amount you spent. Enter a positive number
   with up to two decimal places (e.g. `12.50`).
 - **Date** (required) — the date of the expense. Defaults to today.
@@ -42,11 +41,16 @@ Fill in the **Add Expense** form:
   grocery run"), up to 80 characters.
 - **Description** (optional) — any extra notes, up to 500 characters.
 
-Click **Add Expense** to save it. If anything required is missing or
-invalid, you'll see an error message next to that field and nothing will be
-saved. On success, the expense appears in the list below, and the form
-clears — except the date, which stays put so you can quickly log another
-expense from the same day.
+Click **Add Expense** to save it, or **Cancel** to close the pop-up without
+saving anything you've typed. You can also close it by pressing **Esc** or
+clicking outside the pop-up. If anything required is missing or invalid
+when you click Add Expense, you'll see an error message next to that field
+and the pop-up stays open. On success, the pop-up closes and the expense
+appears in the list below.
+
+If you haven't set up any expense types yet, the **+ Add Expense** button
+is replaced with a message and a link that takes you straight to
+Configuration so you can add one first.
 
 ### Viewing and removing expenses
 

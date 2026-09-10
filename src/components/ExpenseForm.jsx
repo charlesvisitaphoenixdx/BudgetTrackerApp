@@ -10,16 +10,20 @@ function emptyForm() {
   return { expenseTypeId: "", amount: "", date: todayISO(), name: "", description: "" };
 }
 
-export default function ExpenseForm({ expenseTypes, onSubmit, onGoToConfiguration }) {
+/**
+ * The Add Expense form. Rendered inside a Modal by ExpensesPage; `onCancel`
+ * closes it without saving, `onSubmit` (async) is awaited and, on success,
+ * the parent closes the modal - this component doesn't manage its own
+ * open/closed state.
+ */
+export default function ExpenseForm({ expenseTypes, onSubmit, onCancel }) {
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
     setErrors((e) => (e[field] ? { ...e, [field]: undefined } : e));
-    if (successMsg) setSuccessMsg("");
   }
 
   async function handleSubmit(e) {
@@ -27,7 +31,6 @@ export default function ExpenseForm({ expenseTypes, onSubmit, onGoToConfiguratio
     const { valid, errors: validationErrors } = validateExpense(form);
     if (!valid) {
       setErrors(validationErrors);
-      setSuccessMsg("");
       return;
     }
 
@@ -40,33 +43,15 @@ export default function ExpenseForm({ expenseTypes, onSubmit, onGoToConfiguratio
         name: form.name.trim(),
         description: form.description.trim(),
       });
-      setForm({ ...emptyForm(), date: form.date }); // keep the date for quick consecutive entries
-      setErrors({});
-      setSuccessMsg("Expense added.");
+      // Success: the parent closes the modal, which unmounts this form.
     } catch {
       setErrors({ form: "Couldn't save this expense. Please try again." });
-    } finally {
       setSubmitting(false);
     }
   }
 
-  if (expenseTypes.length === 0) {
-    return (
-      <section className="card">
-        <h2>Add Expense</h2>
-        <p className="sub">
-          You don&apos;t have any expense types set up yet.{" "}
-          <button type="button" className="link-btn" onClick={onGoToConfiguration}>
-            Add one in Configuration
-          </button>{" "}
-          before logging an expense.
-        </p>
-      </section>
-    );
-  }
-
   return (
-    <section className="card">
+    <>
       <h2>Add Expense</h2>
       <form onSubmit={handleSubmit} noValidate>
         <div className="form-grid">
@@ -135,12 +120,16 @@ export default function ExpenseForm({ expenseTypes, onSubmit, onGoToConfiguratio
         </div>
 
         {errors.form && <div className="error-msg">{errors.form}</div>}
-        {successMsg && <div className="success-msg">{successMsg}</div>}
 
-        <button type="submit" className="primary" disabled={submitting}>
-          {submitting ? "Adding…" : "Add Expense"}
-        </button>
+        <div className="modal-actions">
+          <button type="button" className="secondary" onClick={onCancel} disabled={submitting}>
+            Cancel
+          </button>
+          <button type="submit" className="primary" disabled={submitting}>
+            {submitting ? "Adding…" : "Add Expense"}
+          </button>
+        </div>
       </form>
-    </section>
+    </>
   );
 }

@@ -33,4 +33,11 @@ npm run build     # production build (also generates the service worker)
 npm run preview   # preview the production build locally
 ```
 
+## Documentation
+
+- [User Guide](docs/USER_GUIDE.md) — how to use the app.
+- [Technical Documentation](docs/TECHNICAL.md) — architecture, data model,
+  and developer notes.
+- [QA reports](docs/qa/) — dated test-pass reports.
+
 _Repository initialized by Claude — ready for development._

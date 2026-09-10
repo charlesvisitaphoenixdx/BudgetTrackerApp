@@ -2,7 +2,8 @@
 
 BudgetTrackerApp helps you track your spending against a budget period that
 you define — not necessarily the calendar month. This guide covers what's
-available today: the **Configuration** screen.
+available today: the **Expenses** screen and the **Configuration** screen,
+which you can switch between using the two buttons at the top of the app.
 
 ## Installing the app
 
@@ -20,6 +21,44 @@ even without an internet connection:
 
 Once installed, the app opens in its own window, gets its own icon, and
 keeps working offline.
+
+## Expenses
+
+The Expenses screen is where you log what you spend. It opens by default
+when you start the app.
+
+### Adding an expense
+
+Fill in the **Add Expense** form:
+
+- **Expense Type** (required) — pick from the categories you've set up in
+  Configuration. If you haven't set up any expense types yet, this form is
+  replaced with a message and a link that takes you straight to
+  Configuration so you can add one first.
+- **Amount** (required) — the amount you spent. Enter a positive number
+  with up to two decimal places (e.g. `12.50`).
+- **Date** (required) — the date of the expense. Defaults to today.
+- **Name** (required) — a short label for the expense (e.g. "Weekly
+  grocery run"), up to 80 characters.
+- **Description** (optional) — any extra notes, up to 500 characters.
+
+Click **Add Expense** to save it. If anything required is missing or
+invalid, you'll see an error message next to that field and nothing will be
+saved. On success, the expense appears in the list below, and the form
+clears — except the date, which stays put so you can quickly log another
+expense from the same day.
+
+### Viewing and removing expenses
+
+Everything you've logged appears under **Logged Expenses**, most recent
+first, with its category color, name, amount, date, category, and any
+description. Click the **✕** button on an entry to delete it.
+
+If an expense's category is later removed in Configuration, the entry
+isn't deleted or broken — it's shown with "Deleted category" in its place.
+
+There is currently no way to edit an existing expense after it's saved;
+delete it and add a corrected one instead.
 
 ## Configuration
 
@@ -79,19 +118,19 @@ previous and next periods for context, so you can see the pattern.
 
 ## Where is my data stored?
 
-Everything on the Configuration screen — your expense types and your start
-day setting — is stored locally on your device (in the browser's storage).
-It is not uploaded to a server. This means:
+Everything you enter — expense types, your start day setting, and every
+expense you log — is stored locally on your device (in the browser's
+storage). It is not uploaded to a server. This means:
 
 - Your data stays private to the device you're using.
 - If you use the app on a different device or browser, you'll need to set
-  up your Expense Types and Start Day again there (there is currently no
-  syncing between devices).
+  everything up again there (there is currently no syncing between
+  devices).
 - Clearing your browser's site data for this app, or uninstalling it, will
-  remove your saved configuration.
+  remove everything you've entered, including logged expenses.
 
 ## What's coming next
 
-The Configuration screen is the first part of BudgetTrackerApp. Expense
-entry and tracking — actually logging what you spend against these
-categories and periods — is planned next and isn't available yet.
+Expenses aren't yet connected to your configured Budget Period Start Day —
+there's no view yet that totals or filters your spending by period. That,
+along with editing existing expenses, is planned next.

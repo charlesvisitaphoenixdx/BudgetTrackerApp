@@ -9,10 +9,12 @@ budget period.
 - `vite-plugin-pwa` for the installable/offline PWA bits (manifest + service
   worker)
 - Vitest for unit tests
+- `localStorage` for configuration data, IndexedDB (via `idb`) for expense
+  records
 
 ## Configuration module
 
-The first module of the app, implemented under `src/pages/ConfigurationPage.jsx`:
+Implemented under `src/pages/ConfigurationPage.jsx`:
 
 - **Expense Types** — categories used to tag expenses (name + color). Add,
   rename, or remove types. Persisted to `localStorage`.
@@ -22,6 +24,16 @@ The first module of the app, implemented under `src/pages/ConfigurationPage.jsx`
   configured day doesn't exist in a given month (e.g. `31` in February), it
   is clamped to that month's last day. The period math lives in
   `src/utils/period.js` and is covered by tests in `src/utils/period.test.js`.
+
+## Expense Entry module
+
+Implemented under `src/pages/ExpensesPage.jsx`:
+
+- Add an expense: Expense Type, Amount, Date, and Name are required;
+  Description is optional. Validated in `src/utils/expenseValidation.js`
+  (unit-tested).
+- View logged expenses (most recent first) and delete them. Persisted to
+  IndexedDB via `src/utils/expensesDb.js`.
 
 ## Development
 

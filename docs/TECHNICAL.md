@@ -15,13 +15,16 @@ created, read, updated, and persisted directly in the browser.
 | Build tool | Vite 5 | Fast dev server + production bundling. |
 | PWA | `vite-plugin-pwa` (Workbox under the hood) | Generates the web manifest and service worker at build time (`generateSW` mode). |
 | Unit tests | Vitest 2 | Chosen for its drop-in Jest-like API and native Vite integration (no separate test bundler config needed). |
-| Config-data persistence | `localStorage` | See "Data persistence" below. |
-| Transaction-data persistence (planned) | IndexedDB, via the `idb` wrapper library | Not yet implemented — see `claude/requirements.md` in the project for the decision record. |
+| Config-data persistence | `localStorage` | See "Data model" below. |
+| Transaction-data persistence | IndexedDB, via the `idb` wrapper library | See `claude/requirements.md` in the project for the decision record. |
 
-No state-management library (Redux/Zustand/etc.), routing library, or CSS
-framework is in use — the app is currently a single screen, so plain
-`useState`/custom hooks and hand-written CSS are sufficient. Revisit this if
-the app grows enough screens/routes to need one.
+No state-management library (Redux/Zustand/etc.) or CSS framework is in
+use — plain `useState`/custom hooks and hand-written CSS are sufficient so
+far. There's also no routing library: with two screens, `App.jsx` just
+keeps a `screen` string in `useState` and conditionally renders one page or
+the other, with a couple of nav buttons to switch. Revisit this if the app
+grows enough screens to make that unwieldy (e.g. needing deep-linkable
+URLs).
 
 ## Project structure
 
@@ -35,19 +38,27 @@ BudgetTrackerApp/
 │   └── icons/               # PWA manifest icons (192px, 512px)
 ├── src/
 │   ├── main.jsx             # React root render
-│   ├── App.jsx              # Top-level component (currently just renders ConfigurationPage)
+│   ├── App.jsx              # Top-level: nav between Expenses / Configuration screens
 │   ├── App.css               # Component styles (design tokens as CSS custom properties)
 │   ├── index.css             # Global reset + light/dark color tokens
 │   ├── pages/
-│   │   └── ConfigurationPage.jsx   # Composes the Configuration screen
+│   │   ├── ConfigurationPage.jsx   # Composes the Configuration screen
+│   │   └── ExpensesPage.jsx        # Composes the Expenses screen
 │   ├── components/
 │   │   ├── ExpenseTypesManager.jsx # Expense Types CRUD UI
-│   │   └── PeriodSettings.jsx      # Start-day setting + period preview UI
+│   │   ├── PeriodSettings.jsx      # Start-day setting + period preview UI
+│   │   ├── ExpenseForm.jsx         # Add-expense form + validation wiring
+│   │   └── ExpenseList.jsx         # Logged-expenses list + delete
 │   ├── hooks/
-│   │   └── useLocalStorageState.js # useState, but persisted to localStorage
+│   │   ├── useLocalStorageState.js # useState, but persisted to localStorage
+│   │   └── useExpenses.js          # Loads/add/remove expenses via expensesDb.js
 │   └── utils/
-│       ├── period.js          # Pure functions: budget-period date math
-│       └── period.test.js     # Vitest unit tests for period.js
+│       ├── period.js              # Pure functions: budget-period date math
+│       ├── period.test.js
+│       ├── expenseValidation.js   # Pure Expense Entry form validation
+│       ├── expenseValidation.test.js
+│       ├── expensesDb.js          # IndexedDB (idb) access for expense records
+│       └── format.js              # Shared amount/date display formatting
 └── docs/
     ├── USER_GUIDE.md
     ├── TECHNICAL.md            # this file
@@ -70,6 +81,30 @@ nothing is stored or storage throws, e.g. in private browsing) and writes
 back on every change via a `useEffect`. Reads/writes are wrapped in
 try/catch so a storage failure degrades to in-memory-only behavior rather
 than crashing the app.
+
+Expense transaction records live in **IndexedDB** (database
+`budget-tracker-db`, object store `expenses`, `src/utils/expensesDb.js`),
+accessed via the `idb` wrapper:
+
+- `id` (string, `crypto.randomUUID()`) — primary key.
+- `expenseTypeId` (number) — references an id in `config.expenseTypes`.
+  Deliberately **not** denormalized (no snapshot of the type's name/color
+  at entry time): the UI looks up the current type by id at render time,
+  and falls back to a "Deleted category" label if the id no longer matches
+  anything in Configuration (e.g. the type was deleted after the expense
+  was logged). This was a simplicity trade-off for the MVP — see "Known
+  limitations" below.
+- `amount` (number, rounded to 2 decimal places on save).
+- `date` (string, `YYYY-MM-DD`).
+- `name` (string, ≤80 chars).
+- `description` (string, ≤500 chars, may be empty).
+- `createdAt` (ISO timestamp string) — insertion order, used as a
+  tie-breaker when sorting same-day expenses.
+
+Indexes `by-date` and `by-expenseTypeId` are created up front (even though
+nothing queries them yet) specifically to avoid an IndexedDB schema
+migration (a version bump + `upgrade()` path) later, once period-based
+filtering or reporting needs them.
 
 ## Budget period calculation (`src/utils/period.js`)
 
@@ -128,6 +163,25 @@ where an off-by-one silently ships.
   `useLocalStorageState`).
 - **`ConfigurationPage`**: the composition root for this screen — wires the
   two components above to their respective `localStorage`-backed state.
+- **`ExpenseForm`**: an uncontrolled-feeling but fully controlled form
+  (all fields in one `useState` object) that delegates all validation to
+  the pure `validateExpense()` function rather than duplicating rules
+  in the component. Renders a fallback "add an expense type first" message
+  in place of the form when `expenseTypes` is empty, with a callback prop
+  (`onGoToConfiguration`) to switch screens. Note that the Amount field's
+  native `type="number"` and the Name/Description fields' `maxLength`
+  attributes already block a lot of invalid input before `validateExpense`
+  ever sees it — its own checks for those cases exist as defense-in-depth
+  (see `docs/qa/QA-report-2026-09-10-expense-entry.md`), not because they're
+  reachable through the form under normal use.
+- **`ExpenseList`**: sorts by date (descending) with `createdAt` as a
+  tie-breaker; looks up each record's expense type by id from the current
+  `expenseTypes` array (not stored on the record itself — see "Data model").
+- **`ExpensesPage`**: the composition root for this screen. Reads
+  `config.expenseTypes` via `useLocalStorageState` (read-only usage — the
+  setter is discarded) so it always reflects Configuration's current state;
+  since `App.jsx` unmounts/remounts pages on nav rather than keeping both
+  mounted, there's no live-sync concern between the two screens.
 
 ## Styling
 
@@ -166,12 +220,12 @@ Configured in `vite.config.js` via `VitePWA({...})`:
 
 ## Testing strategy
 
-- **Unit tests** (Vitest): currently cover `src/utils/period.js` only,
-  since it's the only module with non-trivial pure logic. Component
-  behavior has so far been verified via manual/scripted browser testing
-  (see QA reports) rather than component tests (e.g. React Testing
-  Library) — that may be worth adding once components have more
-  conditional logic worth locking down.
+- **Unit tests** (Vitest): cover the pure logic modules —
+  `src/utils/period.js` (9 tests) and `src/utils/expenseValidation.js`
+  (17 tests). Component behavior and storage (localStorage, IndexedDB) are
+  verified via scripted browser testing (see QA reports) rather than
+  component tests (e.g. React Testing Library) — that may be worth adding
+  once components have more conditional logic worth locking down.
 - **QA passes**: ad hoc, dated reports live under `docs/qa/`. These are
   produced by scripting a real Chromium browser (Playwright) against the
   production build (`npm run build && npm run preview`) — clicking,
@@ -189,8 +243,16 @@ Configured in `vite.config.js` via `VitePWA({...})`:
 - Expense Types currently only have `name` + `color`; no icon, limit, or
   active/inactive fields (explicit scope decision, see
   `claude/requirements.md`).
-- IndexedDB migration for transaction data (planned for the Expense
-  Tracking module) has not started; `localStorage` remains config-only.
+- Expenses cannot be edited after creation — only added or deleted.
+- Expenses aren't yet connected to the configured Budget Period Start Day:
+  there's no filtering, totals, or reporting by period yet.
+- No currency or locale handling: amounts are plain fixed-point numbers
+  (`12.50`), with no currency symbol or thousands separator.
+- An expense stores only `expenseTypeId`, not a snapshot of that type's
+  name/color — if the type is renamed later, past expenses show the new
+  name; if it's deleted, they show "Deleted category". This was a
+  simplicity trade-off for the MVP; revisit if historical accuracy (keeping
+  the name/color as they were at entry time) turns out to matter.
 
 ## Where decisions are tracked
 

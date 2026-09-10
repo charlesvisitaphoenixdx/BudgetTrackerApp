@@ -49,6 +49,12 @@ header.page p {
   margin-bottom: 16px;
 }
 
+.type-row-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .type-row {
   display: flex;
   align-items: center;
@@ -56,6 +62,12 @@ header.page p {
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 10px;
+}
+
+.row-error {
+  font-size: 12px;
+  color: var(--danger);
+  padding: 0 10px;
 }
 
 .type-row input[type="color"] {

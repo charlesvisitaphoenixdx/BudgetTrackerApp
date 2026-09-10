@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const SEED_TYPES = [
   { id: 1, name: "Groceries", color: "#22c55e" },
@@ -9,6 +9,63 @@ const SEED_TYPES = [
 ];
 
 export { SEED_TYPES };
+
+function TypeRow({ type, isDuplicate, onRename, onRecolor, onRemove }) {
+  const [draft, setDraft] = useState(type.name);
+  const [rowError, setRowError] = useState("");
+
+  // Keep the field in sync if the underlying name changes from elsewhere
+  // (e.g. a successful rename re-renders with the committed value).
+  useEffect(() => {
+    setDraft(type.name);
+  }, [type.name]);
+
+  function commit() {
+    const trimmed = draft.trim();
+    if (!trimmed) {
+      setRowError("Name can't be empty.");
+      setDraft(type.name);
+      return;
+    }
+    if (trimmed.toLowerCase() !== type.name.toLowerCase() && isDuplicate(trimmed, type.id)) {
+      setRowError(`"${trimmed}" already exists.`);
+      setDraft(type.name);
+      return;
+    }
+    setRowError("");
+    if (trimmed !== type.name) onRename(type.id, trimmed);
+  }
+
+  return (
+    <div className="type-row-wrap">
+      <div className="type-row">
+        <input
+          type="color"
+          className="swatch-input"
+          value={type.color}
+          onChange={(e) => onRecolor(type.id, e.target.value)}
+          aria-label={`Color for ${type.name}`}
+        />
+        <input
+          type="text"
+          value={draft}
+          maxLength={40}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            if (rowError) setRowError("");
+          }}
+          onBlur={commit}
+          onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+          aria-label="Expense type name"
+        />
+        <button type="button" className="icon-btn" title="Remove" onClick={() => onRemove(type.id)}>
+          ✕
+        </button>
+      </div>
+      {rowError && <div className="row-error">{rowError}</div>}
+    </div>
+  );
+}
 
 export default function ExpenseTypesManager({ types, setTypes }) {
   const [newName, setNewName] = useState("");
@@ -34,9 +91,7 @@ export default function ExpenseTypesManager({ types, setTypes }) {
     setError("");
   }
 
-  function renameType(id, rawName) {
-    const name = rawName.trim();
-    if (!name || nameExists(name, id)) return;
+  function renameType(id, name) {
     setTypes(types.map((t) => (t.id === id ? { ...t, name } : t)));
   }
 
@@ -58,30 +113,14 @@ export default function ExpenseTypesManager({ types, setTypes }) {
 
       <div className="type-list">
         {types.map((t) => (
-          <div className="type-row" key={t.id}>
-            <input
-              type="color"
-              className="swatch-input"
-              value={t.color}
-              onChange={(e) => recolorType(t.id, e.target.value)}
-              aria-label={`Color for ${t.name}`}
-            />
-            <input
-              type="text"
-              defaultValue={t.name}
-              maxLength={40}
-              onBlur={(e) => renameType(t.id, e.target.value)}
-              aria-label="Expense type name"
-            />
-            <button
-              type="button"
-              className="icon-btn"
-              title="Remove"
-              onClick={() => removeType(t.id)}
-            >
-              ✕
-            </button>
-          </div>
+          <TypeRow
+            key={t.id}
+            type={t}
+            isDuplicate={nameExists}
+            onRename={renameType}
+            onRecolor={recolorType}
+            onRemove={removeType}
+          />
         ))}
         {types.length === 0 && <p className="empty">No expense types yet — add one below.</p>}
       </div>
@@ -101,6 +140,7 @@ export default function ExpenseTypesManager({ types, setTypes }) {
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addType()}
+          aria-label="New expense type name"
         />
         <button type="button" className="primary" onClick={addType}>
           Add

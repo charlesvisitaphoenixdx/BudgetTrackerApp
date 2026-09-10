@@ -215,7 +215,8 @@ button.primary:hover {
 }
 
 .field input[type="number"],
-.field input[type="date"] {
+.field input[type="date"],
+.field input[type="text"] {
   padding: 9px 12px;
   border-radius: 9px;
   border: 1px solid var(--border);

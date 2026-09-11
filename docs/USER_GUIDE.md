@@ -65,7 +65,8 @@ need and click **Update Expense** to save, or **Cancel** to close the
 pop-up without changing anything. The same required-field and format
 checks apply as when adding.
 
-**To remove an expense:** click the **✕** button on its row.
+**To remove an expense:** click the **✕** button on its row, then confirm
+the deletion. This can't be undone.
 
 If an expense's category is later removed in Configuration, the entry
 isn't deleted or broken — it's shown with "Deleted category" in its place,

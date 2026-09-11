@@ -413,15 +413,28 @@ button.secondary:hover {
   border-radius: 10px;
 }
 
-.expense-row-clickable {
+.expense-row-select {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  border: none;
+  margin: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
+  border-radius: 8px;
 }
 
-.expense-row-clickable:hover {
+.expense-row-select:hover {
   background: var(--accent-soft);
 }
 
-.expense-row-clickable:focus-visible {
+.expense-row-select:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }

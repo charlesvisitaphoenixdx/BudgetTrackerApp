@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validateExpense } from "./expenseValidation.js";
+import { validateExpense, MAX_AMOUNT, MAX_PAST_YEARS, MAX_FUTURE_YEARS } from "./expenseValidation.js";
 
 const VALID = {
   expenseTypeId: "1",
@@ -62,6 +62,23 @@ describe("validateExpense", () => {
     expect(valid).toBe(true);
   });
 
+  it("accepts an amount right at the maximum", () => {
+    const { valid } = validateExpense({ ...VALID, amount: String(MAX_AMOUNT) });
+    expect(valid).toBe(true);
+  });
+
+  it("rejects an amount over the maximum", () => {
+    const { valid, errors } = validateExpense({ ...VALID, amount: String(MAX_AMOUNT + 0.01) });
+    expect(valid).toBe(false);
+    expect(errors.amount).toMatch(/or less/i);
+  });
+
+  it("rejects an absurdly large amount", () => {
+    const { valid, errors } = validateExpense({ ...VALID, amount: "99999999999999999999.99" });
+    expect(valid).toBe(false);
+    expect(errors.amount).toMatch(/or less/i);
+  });
+
   it("requires a date", () => {
     const { valid, errors } = validateExpense({ ...VALID, date: "" });
     expect(valid).toBe(false);
@@ -72,6 +89,25 @@ describe("validateExpense", () => {
     const { valid, errors } = validateExpense({ ...VALID, date: "not-a-date" });
     expect(valid).toBe(false);
     expect(errors.date).toMatch(/valid date/i);
+  });
+
+  it("rejects a date far in the past", () => {
+    const year = new Date().getFullYear() - MAX_PAST_YEARS - 1;
+    const { valid, errors } = validateExpense({ ...VALID, date: `${year}-01-01` });
+    expect(valid).toBe(false);
+    expect(errors.date).toMatch(/past/i);
+  });
+
+  it("rejects a date far in the future", () => {
+    const year = new Date().getFullYear() + MAX_FUTURE_YEARS + 1;
+    const { valid, errors } = validateExpense({ ...VALID, date: `${year}-01-01` });
+    expect(valid).toBe(false);
+    expect(errors.date).toMatch(/future/i);
+  });
+
+  it("accepts today's date", () => {
+    const { valid } = validateExpense({ ...VALID, date: new Date().toISOString().slice(0, 10) });
+    expect(valid).toBe(true);
   });
 
   it("requires a name", () => {

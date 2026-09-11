@@ -34,7 +34,7 @@ Implemented under `src/pages/ExpensesPage.jsx`:
   is optional. Validated in `src/utils/expenseValidation.js` (unit-tested).
 - View logged expenses (most recent first). Click an entry to reopen the
   same modal, pre-filled, and update it (Update Expense / Cancel); click
-  the ✕ button to delete it. Persisted to IndexedDB via
+  the ✕ button, then confirm, to delete it. Persisted to IndexedDB via
   `src/utils/expensesDb.js`.
 
 ## Development

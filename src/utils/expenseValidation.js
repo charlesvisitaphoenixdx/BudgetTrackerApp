@@ -3,6 +3,13 @@
 
 const AMOUNT_PATTERN = /^\d+(\.\d{1,2})?$/;
 
+// Sanity bounds, not business rules: catch obvious typos (an extra digit on
+// the amount, a transposed year on the date) rather than restrict legitimate
+// entries.
+export const MAX_AMOUNT = 1_000_000;
+export const MAX_PAST_YEARS = 50;
+export const MAX_FUTURE_YEARS = 1;
+
 export function validateExpense({ expenseTypeId, amount, date, name, description }) {
   const errors = {};
 
@@ -21,13 +28,27 @@ export function validateExpense({ expenseTypeId, amount, date, name, description
       errors.amount = "Amount must be greater than 0.";
     } else if (!AMOUNT_PATTERN.test(amountStr)) {
       errors.amount = "Amount can have at most 2 decimal places.";
+    } else if (num > MAX_AMOUNT) {
+      errors.amount = `Amount must be ${MAX_AMOUNT.toLocaleString()} or less.`;
     }
   }
 
   if (!date) {
     errors.date = "Select a date.";
-  } else if (Number.isNaN(new Date(`${date}T00:00:00`).getTime())) {
-    errors.date = "Enter a valid date.";
+  } else {
+    const parsed = new Date(`${date}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) {
+      errors.date = "Enter a valid date.";
+    } else {
+      const now = new Date();
+      const minDate = new Date(now.getFullYear() - MAX_PAST_YEARS, now.getMonth(), now.getDate());
+      const maxDate = new Date(now.getFullYear() + MAX_FUTURE_YEARS, now.getMonth(), now.getDate());
+      if (parsed < minDate) {
+        errors.date = `Date can't be more than ${MAX_PAST_YEARS} years in the past.`;
+      } else if (parsed > maxDate) {
+        errors.date = `Date can't be more than ${MAX_FUTURE_YEARS} year in the future.`;
+      }
+    }
   }
 
   const trimmedName = (name ?? "").trim();

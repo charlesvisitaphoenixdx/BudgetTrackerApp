@@ -181,7 +181,12 @@ where an off-by-one silently ships.
   mounted (restored via its `useEffect` cleanup). Takes `title` (used as
   `aria-label`) and `onClose`; the caller owns the open/closed state and
   conditionally renders `<Modal>` — the component has no internal
-  visibility state of its own.
+  visibility state of its own. Also manages focus: on mount it moves focus
+  to the first focusable element inside `.modal-panel` (falling back to the
+  panel itself, which carries `tabIndex={-1}`), traps Tab/Shift+Tab so it
+  cycles only among the panel's focusable descendants, and on unmount
+  restores focus to whatever element had it before the modal opened (the
+  trigger button, in practice).
 - **`ExpenseForm`**: rendered inside `<Modal>` by `ExpensesPage`, either for
   adding (triggered by "+ Add Expense") or editing (triggered by clicking a
   logged-expense row). A fully controlled form (all fields in one
@@ -212,12 +217,19 @@ where an off-by-one silently ships.
 - **`ExpenseList`**: sorts by date (descending) with `createdAt` as a
   tie-breaker; looks up each record's expense type by id from the current
   `expenseTypes` array (not stored on the record itself — see "Data model").
-  Each row is clickable (`role="button"`, `tabIndex={0}`, Enter/Space
-  handled via `onKeyDown`) and calls the `onSelect` prop with that row's
-  expense record — `ExpensesPage` uses this to open the edit modal. The
-  delete (`✕`) button's `onClick` calls `e.stopPropagation()` before
-  `onDelete(exp.id)` so that deleting a row never also triggers the row's
-  own click-to-edit handler.
+  Each row renders as a non-interactive `<div className="expense-row">`
+  containing two flat, sibling `<button>`s rather than a button nested
+  inside a `role="button"` row (an ARIA anti-pattern the previous markup
+  had): one button (`.expense-row-select`, styled to fill the row) calls
+  the `onSelect` prop with that row's expense record — `ExpensesPage` uses
+  this to open the edit modal — and the other is the delete (`✕`) button.
+  Because they're siblings rather than nested, clicking delete no longer
+  needs `e.stopPropagation()` to avoid also triggering row selection. The
+  delete button's `onClick` first asks for confirmation via `window.confirm`
+  (deleting is irreversible) and, if confirmed, `await`s `onDelete(exp.id)`
+  so a rejected delete doesn't become an unhandled promise rejection;
+  `useExpenses`'s `removeExpense` catches storage errors itself and surfaces
+  them through the same `error` state used for load failures.
 - **`ExpensesPage`**: the composition root for this screen. Reads
   `config.expenseTypes` via `useLocalStorageState` (read-only usage — the
   setter is discarded) so it always reflects Configuration's current state;
@@ -275,7 +287,7 @@ Configured in `vite.config.js` via `VitePWA({...})`:
 
 - **Unit tests** (Vitest): cover the pure logic modules —
   `src/utils/period.js` (9 tests) and `src/utils/expenseValidation.js`
-  (17 tests). Component behavior and storage (localStorage, IndexedDB) are
+  (23 tests). Component behavior and storage (localStorage, IndexedDB) are
   verified via scripted browser testing (see QA reports) rather than
   component tests (e.g. React Testing Library) — that may be worth adding
   once components have more conditional logic worth locking down.

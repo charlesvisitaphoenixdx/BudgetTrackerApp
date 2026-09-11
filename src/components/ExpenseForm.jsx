@@ -1,9 +1,24 @@
 import { useState } from "react";
-import { validateExpense } from "../utils/expenseValidation.js";
+import { MAX_PAST_YEARS, MAX_FUTURE_YEARS, validateExpense } from "../utils/expenseValidation.js";
+
+function toISODate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 function todayISO() {
-  const t = new Date();
-  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
+  return toISODate(new Date());
+}
+
+function minAllowedDateISO() {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - MAX_PAST_YEARS);
+  return toISODate(d);
+}
+
+function maxAllowedDateISO() {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + MAX_FUTURE_YEARS);
+  return toISODate(d);
 }
 
 function emptyForm() {
@@ -75,6 +90,8 @@ export default function ExpenseForm({ expenseTypes, initialValue, onSubmit, onCa
               id="expenseType"
               value={form.expenseTypeId}
               onChange={(e) => update("expenseTypeId", e.target.value)}
+              aria-invalid={Boolean(errors.expenseTypeId)}
+              aria-describedby={errors.expenseTypeId ? "expenseType-error" : undefined}
             >
               <option value="">Select…</option>
               {expenseTypes.map((t) => (
@@ -83,7 +100,11 @@ export default function ExpenseForm({ expenseTypes, initialValue, onSubmit, onCa
                 </option>
               ))}
             </select>
-            {errors.expenseTypeId && <div className="row-error">{errors.expenseTypeId}</div>}
+            {errors.expenseTypeId && (
+              <div className="row-error" id="expenseType-error" role="alert">
+                {errors.expenseTypeId}
+              </div>
+            )}
           </div>
 
           <div className="field">
@@ -96,14 +117,33 @@ export default function ExpenseForm({ expenseTypes, initialValue, onSubmit, onCa
               placeholder="0.00"
               value={form.amount}
               onChange={(e) => update("amount", e.target.value)}
+              aria-invalid={Boolean(errors.amount)}
+              aria-describedby={errors.amount ? "amount-error" : undefined}
             />
-            {errors.amount && <div className="row-error">{errors.amount}</div>}
+            {errors.amount && (
+              <div className="row-error" id="amount-error" role="alert">
+                {errors.amount}
+              </div>
+            )}
           </div>
 
           <div className="field">
             <label htmlFor="date">Date *</label>
-            <input id="date" type="date" value={form.date} onChange={(e) => update("date", e.target.value)} />
-            {errors.date && <div className="row-error">{errors.date}</div>}
+            <input
+              id="date"
+              type="date"
+              min={minAllowedDateISO()}
+              max={maxAllowedDateISO()}
+              value={form.date}
+              onChange={(e) => update("date", e.target.value)}
+              aria-invalid={Boolean(errors.date)}
+              aria-describedby={errors.date ? "date-error" : undefined}
+            />
+            {errors.date && (
+              <div className="row-error" id="date-error" role="alert">
+                {errors.date}
+              </div>
+            )}
           </div>
 
           <div className="field">
@@ -115,8 +155,14 @@ export default function ExpenseForm({ expenseTypes, initialValue, onSubmit, onCa
               placeholder="e.g. Weekly grocery run"
               value={form.name}
               onChange={(e) => update("name", e.target.value)}
+              aria-invalid={Boolean(errors.name)}
+              aria-describedby={errors.name ? "name-error" : undefined}
             />
-            {errors.name && <div className="row-error">{errors.name}</div>}
+            {errors.name && (
+              <div className="row-error" id="name-error" role="alert">
+                {errors.name}
+              </div>
+            )}
           </div>
         </div>
 
@@ -129,8 +175,14 @@ export default function ExpenseForm({ expenseTypes, initialValue, onSubmit, onCa
             placeholder="Optional notes"
             value={form.description}
             onChange={(e) => update("description", e.target.value)}
+            aria-invalid={Boolean(errors.description)}
+            aria-describedby={errors.description ? "description-error" : undefined}
           />
-          {errors.description && <div className="row-error">{errors.description}</div>}
+          {errors.description && (
+            <div className="row-error" id="description-error" role="alert">
+              {errors.description}
+            </div>
+          )}
         </div>
 
         {errors.form && <div className="error-msg">{errors.form}</div>}

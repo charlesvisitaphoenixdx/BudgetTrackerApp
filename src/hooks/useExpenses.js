@@ -44,8 +44,13 @@ export function useExpenses() {
   }, []);
 
   const removeExpense = useCallback(async (id) => {
-    await dbDeleteExpense(id);
-    setExpenses((prev) => prev.filter((e) => e.id !== id));
+    try {
+      await dbDeleteExpense(id);
+      setExpenses((prev) => prev.filter((e) => e.id !== id));
+      setError("");
+    } catch {
+      setError("Couldn't delete this expense. Please try again.");
+    }
   }, []);
 
   return { expenses, loading, error, addExpense, editExpense, removeExpense };

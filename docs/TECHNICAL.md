@@ -313,8 +313,9 @@ Configured in `vite.config.js` via `VitePWA({...})`:
   `claude/requirements.md`).
 - Expenses aren't yet connected to the configured Budget Period Start Day:
   there's no filtering, totals, or reporting by period yet.
-- No currency or locale handling: amounts are plain fixed-point numbers
-  (`12.50`), with no currency symbol or thousands separator.
+- No currency or locale handling: amounts have no currency symbol, and
+  always use `en-US`-style grouping (e.g. `9,999,999.99`) regardless of the
+  user's actual locale, via `formatAmount()`.
 - An expense stores only `expenseTypeId`, not a snapshot of that type's
   name/color — if the type is renamed later, past expenses show the new
   name; if it's deleted, they show "Deleted category". This was a

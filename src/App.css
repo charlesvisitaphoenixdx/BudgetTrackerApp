@@ -571,19 +571,24 @@ button.secondary:hover {
 }
 
 .trend-row {
-  display: grid;
-  grid-template-columns: 130px 1fr 70px;
-  align-items: center;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .trend-range {
   font-size: 12.5px;
   color: var(--text-muted);
-  white-space: nowrap;
+}
+
+.trend-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .trend-bar-track {
+  flex: 1;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -598,18 +603,9 @@ button.secondary:hover {
 }
 
 .trend-amount {
+  width: 70px;
+  flex: none;
   font-size: 14px;
   font-weight: 600;
   text-align: right;
-}
-
-@media (max-width: 480px) {
-  .trend-row {
-    grid-template-columns: 1fr;
-    gap: 4px;
-  }
-
-  .trend-amount {
-    text-align: left;
-  }
 }

@@ -1,12 +1,13 @@
 // Small display-formatting helpers shared by expense-related components.
-// No currency/locale selection exists yet (see docs/TECHNICAL.md "known
-// limitations"), so amounts are shown as plain fixed-point numbers rather
-// than assuming a currency symbol.
+// No currency symbol/locale selection exists yet (see docs/TECHNICAL.md
+// "known limitations"), but amounts are grouped with thousands separators
+// (e.g. "9,999,999.99") for readability, applied consistently everywhere
+// formatAmount() is used.
 
 export function formatAmount(amount) {
   const num = Number(amount);
   if (Number.isNaN(num)) return "-";
-  return num.toFixed(2);
+  return num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export function formatDate(dateStr) {

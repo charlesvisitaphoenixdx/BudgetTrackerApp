@@ -174,10 +174,12 @@ export default function DashboardPage({ onGoToConfiguration }) {
                     <div className="trend-range">
                       {fmt(period.start)} → {fmt(period.end)}
                     </div>
-                    <div className="trend-bar-track">
-                      <div className="trend-bar-fill" style={{ width: `${width}%` }} />
+                    <div className="trend-bar-row">
+                      <div className="trend-bar-track">
+                        <div className="trend-bar-fill" style={{ width: `${width}%` }} />
+                      </div>
+                      <div className="trend-amount">{formatAmount(total)}</div>
                     </div>
-                    <div className="trend-amount">{formatAmount(total)}</div>
                   </div>
                 );
               })}

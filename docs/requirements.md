@@ -306,6 +306,18 @@ each other's results.
 
 ## Feature: Spending Dashboard
 
+> **2026-09-11 consolidation note:** the "Why a new screen, not more
+> sections on Budget" decision directly below was superseded the same day —
+> the user asked for Budget's functionality to move into Dashboard, after
+> which the standalone Budget screen was deleted. `src/pages/BudgetPage.jsx`
+> no longer exists; its period-navigation, total/over-under indicator, and
+> per-category breakdown now live in `src/pages/DashboardPage.jsx`'s
+> "Selected Period" and "By Category" sections (see the Dashboard's own
+> Spending Trend / Top Categories sections below, which keep tracking the
+> real current period regardless of which period "Selected Period" is
+> browsing). The original one-job-per-screen rationale is kept below for
+> its historical reasoning, not as the current architecture.
+
 ### Problem
 
 Expenses gives a raw list of transactions; Budget gives a single period's

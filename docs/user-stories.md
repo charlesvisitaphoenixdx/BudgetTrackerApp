@@ -7,6 +7,17 @@ retroactively documented here (those modules are already implemented and
 QA-passed — see `docs/qa/`); this file covers the **Budget Period Spending
 Summary** feature only.
 
+> **2026-09-11 consolidation note:** the standalone "Budget" screen
+> described in Stories 2-8 below was merged into the Dashboard screen and
+> then removed as its own nav item/page (`src/pages/BudgetPage.jsx` no
+> longer exists). Every acceptance criterion in Stories 2-8 still holds —
+> period navigation, the total/over/under indicator, and the per-category
+> breakdown — it now lives in `src/pages/DashboardPage.jsx`'s "Selected
+> Period" and "By Category" sections, alongside the Dashboard's own
+> Spending Trend / Top Categories / type-filter features (Stories 13-18).
+> Read "Budget screen" in Stories 2-8 as "Dashboard screen's Selected
+> Period section."
+
 ## Configuration: Monthly Budget Limit
 
 ### Story 1 — Set an overall monthly budget limit

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import BudgetPage from "./pages/BudgetPage.jsx";
 import ConfigurationPage from "./pages/ConfigurationPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import ExpensesPage from "./pages/ExpensesPage.jsx";
@@ -20,13 +19,6 @@ export default function App() {
         </button>
         <button
           type="button"
-          className={screen === "budget" ? "nav-btn active" : "nav-btn"}
-          onClick={() => setScreen("budget")}
-        >
-          Budget
-        </button>
-        <button
-          type="button"
           className={screen === "dashboard" ? "nav-btn active" : "nav-btn"}
           onClick={() => setScreen("dashboard")}
         >
@@ -43,9 +35,6 @@ export default function App() {
 
       {screen === "expenses" && (
         <ExpensesPage onGoToConfiguration={() => setScreen("configuration")} />
-      )}
-      {screen === "budget" && (
-        <BudgetPage onGoToConfiguration={() => setScreen("configuration")} />
       )}
       {screen === "dashboard" && (
         <DashboardPage onGoToConfiguration={() => setScreen("configuration")} />

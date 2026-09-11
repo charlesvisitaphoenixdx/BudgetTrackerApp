@@ -311,8 +311,13 @@ Configured in `vite.config.js` via `VitePWA({...})`:
 - Expense Types currently only have `name` + `color`; no icon, limit, or
   active/inactive fields (explicit scope decision, see
   `claude/requirements.md`).
-- Expenses aren't yet connected to the configured Budget Period Start Day:
-  there's no filtering, totals, or reporting by period yet.
+- (Resolved) Expenses are now connected to the configured Budget Period
+  Start Day via the Dashboard screen (`src/pages/DashboardPage.jsx`):
+  per-period totals, an over/under indicator, a per-category breakdown,
+  and a 6-period trend. This bullet is kept as a changelog marker rather
+  than deleted outright, since other sections of this file (e.g. "Project
+  structure", "two screens" above) haven't been fully updated to reflect
+  the Budget/Dashboard screens yet — treat those as stale until revisited.
 - No currency or locale handling: amounts have no currency symbol, and
   always use `en-US`-style grouping (e.g. `9,999,999.99`) regardless of the
   user's actual locale, via `formatAmount()`.

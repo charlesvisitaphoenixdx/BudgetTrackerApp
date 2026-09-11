@@ -554,3 +554,62 @@ button.secondary:hover {
   font-size: 14px;
   font-weight: 600;
 }
+
+.budget-breakdown-pct {
+  font-size: 13px;
+  color: var(--text-muted);
+  width: 48px;
+  text-align: right;
+}
+
+/* Dashboard screen */
+
+.trend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trend-row {
+  display: grid;
+  grid-template-columns: 130px 1fr 70px;
+  align-items: center;
+  gap: 10px;
+}
+
+.trend-range {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.trend-bar-track {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.trend-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+.trend-amount {
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+}
+
+@media (max-width: 480px) {
+  .trend-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .trend-amount {
+    text-align: left;
+  }
+}

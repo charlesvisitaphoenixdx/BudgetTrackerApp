@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+const AMOUNT_PATTERN = /^\d+(\.\d{1,2})?$/;
+
 function draftFromOverall(overall) {
   return overall == null ? "" : String(overall);
 }
@@ -24,7 +26,7 @@ export default function BudgetLimitSettings({ budgetLimits, setBudgetLimits }) {
     const trimmed = draft.trim();
     if (!trimmed) {
       setError("");
-      setBudgetLimits({ ...budgetLimits, overall: null });
+      setBudgetLimits({ ...(budgetLimits ?? {}), overall: null });
       return;
     }
     const num = Number(trimmed);
@@ -33,8 +35,13 @@ export default function BudgetLimitSettings({ budgetLimits, setBudgetLimits }) {
       setDraft(draftFromOverall(overall));
       return;
     }
+    if (!AMOUNT_PATTERN.test(trimmed)) {
+      setError("Enter an amount with at most 2 decimal places.");
+      setDraft(draftFromOverall(overall));
+      return;
+    }
     setError("");
-    setBudgetLimits({ ...budgetLimits, overall: Math.round(num * 100) / 100 });
+    setBudgetLimits({ ...(budgetLimits ?? {}), overall: Math.round(num * 100) / 100 });
   }
 
   return (

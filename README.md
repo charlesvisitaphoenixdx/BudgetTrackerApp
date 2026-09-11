@@ -32,8 +32,10 @@ Implemented under `src/pages/ExpensesPage.jsx`:
 - A "+ Add Expense" button opens the entry form in a modal (Add Expense /
   Cancel). Expense Type, Amount, Date, and Name are required; Description
   is optional. Validated in `src/utils/expenseValidation.js` (unit-tested).
-- View logged expenses (most recent first) and delete them. Persisted to
-  IndexedDB via `src/utils/expensesDb.js`.
+- View logged expenses (most recent first). Click an entry to reopen the
+  same modal, pre-filled, and update it (Update Expense / Cancel); click
+  the ✕ button to delete it. Persisted to IndexedDB via
+  `src/utils/expensesDb.js`.
 
 ## Development
 

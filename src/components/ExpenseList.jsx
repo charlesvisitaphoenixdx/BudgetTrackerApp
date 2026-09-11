@@ -1,6 +1,6 @@
 import { formatAmount, formatDate } from "../utils/format.js";
 
-export default function ExpenseList({ expenses, expenseTypes, onDelete }) {
+export default function ExpenseList({ expenses, expenseTypes, onDelete, onSelect }) {
   const sorted = [...expenses].sort((a, b) => {
     if (a.date !== b.date) return a.date < b.date ? 1 : -1; // most recent date first
     return (b.createdAt || "").localeCompare(a.createdAt || "");
@@ -18,7 +18,20 @@ export default function ExpenseList({ expenses, expenseTypes, onDelete }) {
           {sorted.map((exp) => {
             const type = expenseTypes.find((t) => t.id === exp.expenseTypeId);
             return (
-              <div className="expense-row" key={exp.id}>
+              <div
+                className="expense-row expense-row-clickable"
+                key={exp.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => onSelect?.(exp)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onSelect?.(exp);
+                  }
+                }}
+                aria-label={`Edit expense ${exp.name}`}
+              >
                 <span
                   className="dot"
                   style={{ background: type ? type.color : "#9aa1af" }}
@@ -38,7 +51,10 @@ export default function ExpenseList({ expenses, expenseTypes, onDelete }) {
                   type="button"
                   className="icon-btn"
                   title="Delete"
-                  onClick={() => onDelete(exp.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(exp.id);
+                  }}
                   aria-label={`Delete expense ${exp.name}`}
                 >
                   ✕

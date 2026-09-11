@@ -51,6 +51,24 @@ export async function deleteExpense(id) {
   await db.delete(STORE_EXPENSES, id);
 }
 
+/**
+ * Updates an existing expense record. `updates` is the same shape as
+ * addExpense's input (expenseTypeId, amount, date, name, description) -
+ * `id` and `createdAt` are preserved from the existing record, and an
+ * `updatedAt` timestamp is set. Returns the updated record, or throws if
+ * no record with that id exists.
+ */
+export async function updateExpense(id, updates) {
+  const db = await getDb();
+  const existing = await db.get(STORE_EXPENSES, id);
+  if (!existing) {
+    throw new Error(`No expense found with id ${id}`);
+  }
+  const record = { ...existing, ...updates, id, updatedAt: new Date().toISOString() };
+  await db.put(STORE_EXPENSES, record);
+  return record;
+}
+
 // Exposed for tests/tooling that need to reset state between runs.
 export function _resetDbConnectionForTests() {
   dbPromise = undefined;

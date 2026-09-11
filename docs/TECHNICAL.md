@@ -48,11 +48,11 @@ BudgetTrackerApp/
 │   │   ├── ExpenseTypesManager.jsx # Expense Types CRUD UI
 │   │   ├── PeriodSettings.jsx      # Start-day setting + period preview UI
 │   │   ├── Modal.jsx               # Generic dialog: Escape/backdrop-click to close, scroll lock
-│   │   ├── ExpenseForm.jsx         # Add-expense form + validation wiring (rendered inside Modal)
-│   │   └── ExpenseList.jsx         # Logged-expenses list + delete
+│   │   ├── ExpenseForm.jsx         # Add/Edit expense form + validation wiring (rendered inside Modal)
+│   │   └── ExpenseList.jsx         # Logged-expenses list; click a row to edit, ✕ to delete
 │   ├── hooks/
 │   │   ├── useLocalStorageState.js # useState, but persisted to localStorage
-│   │   └── useExpenses.js          # Loads/add/remove expenses via expensesDb.js
+│   │   └── useExpenses.js          # Loads/add/edit/remove expenses via expensesDb.js
 │   └── utils/
 │       ├── period.js              # Pure functions: budget-period date math
 │       ├── period.test.js
@@ -101,6 +101,16 @@ accessed via the `idb` wrapper:
 - `description` (string, ≤500 chars, may be empty).
 - `createdAt` (ISO timestamp string) — insertion order, used as a
   tie-breaker when sorting same-day expenses.
+- `updatedAt` (ISO timestamp string, optional) — set whenever an existing
+  record is edited via `updateExpense`; absent on records that have never
+  been edited.
+
+`expensesDb.js`'s `updateExpense(id, updates)` reads the existing record,
+merges `updates` on top of it (preserving `id` and the original
+`createdAt`), stamps `updatedAt`, and `db.put`s the result — it throws if
+`id` doesn't match a stored record. `useExpenses()` exposes this as
+`editExpense(id, data)`, which also updates the in-memory `expenses` array
+in place (`.map`) so the UI reflects the change without a full reload.
 
 Indexes `by-date` and `by-expenseTypeId` are created up front (even though
 nothing queries them yet) specifically to avoid an IndexedDB schema
@@ -172,36 +182,59 @@ where an off-by-one silently ships.
   `aria-label`) and `onClose`; the caller owns the open/closed state and
   conditionally renders `<Modal>` — the component has no internal
   visibility state of its own.
-- **`ExpenseForm`**: rendered inside `<Modal>` by `ExpensesPage` when the
-  "+ Add Expense" button is clicked. A fully controlled form (all fields in
-  one `useState` object) that delegates all validation to the pure
+- **`ExpenseForm`**: rendered inside `<Modal>` by `ExpensesPage`, either for
+  adding (triggered by "+ Add Expense") or editing (triggered by clicking a
+  logged-expense row). A fully controlled form (all fields in one
+  `useState` object) that delegates all validation to the pure
   `validateExpense()` function rather than duplicating rules in the
-  component. Takes `onSubmit` (async — awaited, and left to the parent to
-  decide what happens on success) and `onCancel` (wired to the modal's
-  Cancel button); since the component unmounts whenever the modal closes
+  component. Takes an optional `initialValue` prop — an existing expense
+  record — used only to compute the form's initial state
+  (`formFromExpense`, which stringifies `expenseTypeId`/`amount` for the
+  controlled inputs and defaults `description` to `""`); `isEditing =
+  Boolean(initialValue)` then switches the heading ("Add Expense" / "Edit
+  Expense") and the submit button's label ("Add Expense"/"Adding…" vs.
+  "Update Expense"/"Saving…"). It doesn't otherwise behave differently in
+  edit mode — the same `validateExpense()` call runs either way, and
+  `onSubmit` (async — awaited, left to the parent to decide what happens on
+  success) is called with the same normalized shape regardless of add vs.
+  edit; the parent (`ExpensesPage`) is what decides whether that becomes an
+  add or an update. Since the component unmounts whenever the modal closes
   (success or Cancel), it doesn't need to reset its own state — a fresh
-  mount always starts from `emptyForm()`. It no longer renders the
-  "no expense types" fallback itself; that moved up to `ExpensesPage` (see
-  below) since the form is only ever rendered once expense types exist.
-  Note that the Amount field's native `type="number"` and the
-  Name/Description fields' `maxLength` attributes already block a lot of
-  invalid input before `validateExpense` ever sees it — its own checks for
-  those cases exist as defense-in-depth (see
+  mount always starts from either `emptyForm()` or the passed
+  `initialValue`. It no longer renders the "no expense types" fallback
+  itself; that moved up to `ExpensesPage` since the form is only ever
+  rendered once expense types exist. Note that the Amount field's native
+  `type="number"` and the Name/Description fields' `maxLength` attributes
+  already block a lot of invalid input before `validateExpense` ever sees
+  it — its own checks for those cases exist as defense-in-depth (see
   `docs/qa/QA-report-2026-09-10-expense-entry.md`), not because they're
   reachable through the form under normal use.
 - **`ExpenseList`**: sorts by date (descending) with `createdAt` as a
   tie-breaker; looks up each record's expense type by id from the current
   `expenseTypes` array (not stored on the record itself — see "Data model").
+  Each row is clickable (`role="button"`, `tabIndex={0}`, Enter/Space
+  handled via `onKeyDown`) and calls the `onSelect` prop with that row's
+  expense record — `ExpensesPage` uses this to open the edit modal. The
+  delete (`✕`) button's `onClick` calls `e.stopPropagation()` before
+  `onDelete(exp.id)` so that deleting a row never also triggers the row's
+  own click-to-edit handler.
 - **`ExpensesPage`**: the composition root for this screen. Reads
   `config.expenseTypes` via `useLocalStorageState` (read-only usage — the
   setter is discarded) so it always reflects Configuration's current state;
   since `App.jsx` unmounts/remounts pages on nav rather than keeping both
-  mounted, there's no live-sync concern between the two screens. Owns the
-  `showAddModal` boolean and renders either the "+ Add Expense" trigger
-  button or, when there are no expense types configured, the fallback
-  message + link to Configuration in its place (the trigger itself is
-  hidden in that case, rather than opening a modal with nothing useful in
-  it).
+  mounted, there's no live-sync concern between the two screens. Tracks two
+  independent pieces of state: `showAddModal` (boolean, set by "+ Add
+  Expense") and `editingExpense` (the expense record being edited, or
+  `null`, set via `ExpenseList`'s `onSelect`); `isModalOpen` is simply
+  `showAddModal || Boolean(editingExpense)`, and a single `closeModal()`
+  resets both. The modal's `title` and `ExpenseForm`'s `initialValue` are
+  both derived from `editingExpense`. `handleSubmit` is the one place that
+  branches on which mode is active: if `editingExpense` is set it calls
+  `editExpense(editingExpense.id, data)`, otherwise `addExpense(data)`, then
+  closes the modal either way — `ExpenseForm` itself has no idea which
+  storage operation its `onSubmit` call will trigger. When there are no
+  expense types configured, the "+ Add Expense" trigger button is replaced
+  by a fallback message + link to Configuration, same as before.
 
 ## Styling
 
@@ -251,7 +284,10 @@ Configured in `vite.config.js` via `VitePWA({...})`:
   production build (`npm run build && npm run preview`) — clicking,
   typing, reloading — rather than only reading the code. Each report lists
   every test case run and its pass/fail result, plus any bugs found and
-  their fixes.
+  their fixes. Each new feature's QA script re-runs the full suite of prior
+  cases alongside the new ones, as a regression check (see
+  `docs/qa/QA-report-2026-09-11-expense-edit.md` for the most recent
+  example: 34 regression cases + 11 new click-to-edit cases, 45/45 passed).
 
 ## Known limitations / open items
 
@@ -263,7 +299,6 @@ Configured in `vite.config.js` via `VitePWA({...})`:
 - Expense Types currently only have `name` + `color`; no icon, limit, or
   active/inactive fields (explicit scope decision, see
   `claude/requirements.md`).
-- Expenses cannot be edited after creation — only added or deleted.
 - Expenses aren't yet connected to the configured Budget Period Start Day:
   there's no filtering, totals, or reporting by period yet.
 - No currency or locale handling: amounts are plain fixed-point numbers

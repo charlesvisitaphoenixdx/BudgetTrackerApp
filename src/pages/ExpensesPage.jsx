@@ -8,12 +8,24 @@ import { useLocalStorageState } from "../hooks/useLocalStorageState.js";
 
 export default function ExpensesPage({ onGoToConfiguration }) {
   const [expenseTypes] = useLocalStorageState("config.expenseTypes", SEED_TYPES);
-  const { expenses, loading, error, addExpense, removeExpense } = useExpenses();
+  const { expenses, loading, error, addExpense, editExpense, removeExpense } = useExpenses();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
 
-  async function handleAdd(data) {
-    await addExpense(data);
+  const isModalOpen = showAddModal || Boolean(editingExpense);
+
+  function closeModal() {
     setShowAddModal(false);
+    setEditingExpense(null);
+  }
+
+  async function handleSubmit(data) {
+    if (editingExpense) {
+      await editExpense(editingExpense.id, data);
+    } else {
+      await addExpense(data);
+    }
+    closeModal();
   }
 
   return (
@@ -40,9 +52,14 @@ export default function ExpensesPage({ onGoToConfiguration }) {
         </button>
       )}
 
-      {showAddModal && (
-        <Modal title="Add Expense" onClose={() => setShowAddModal(false)}>
-          <ExpenseForm expenseTypes={expenseTypes} onSubmit={handleAdd} onCancel={() => setShowAddModal(false)} />
+      {isModalOpen && (
+        <Modal title={editingExpense ? "Edit Expense" : "Add Expense"} onClose={closeModal}>
+          <ExpenseForm
+            expenseTypes={expenseTypes}
+            initialValue={editingExpense}
+            onSubmit={handleSubmit}
+            onCancel={closeModal}
+          />
         </Modal>
       )}
 
@@ -50,7 +67,12 @@ export default function ExpensesPage({ onGoToConfiguration }) {
       {loading ? (
         <p className="sub">Loading…</p>
       ) : (
-        <ExpenseList expenses={expenses} expenseTypes={expenseTypes} onDelete={removeExpense} />
+        <ExpenseList
+          expenses={expenses}
+          expenseTypes={expenseTypes}
+          onDelete={removeExpense}
+          onSelect={setEditingExpense}
+        />
       )}
     </div>
   );

@@ -52,17 +52,25 @@ If you haven't set up any expense types yet, the **+ Add Expense** button
 is replaced with a message and a link that takes you straight to
 Configuration so you can add one first.
 
-### Viewing and removing expenses
+### Viewing, editing, and removing expenses
 
 Everything you've logged appears under **Logged Expenses**, most recent
 first, with its category color, name, amount, date, category, and any
-description. Click the **✕** button on an entry to delete it.
+description.
+
+**To edit an expense:** click anywhere on its row (other than the ✕ button).
+The same pop-up you used to add it opens back up, titled **Edit Expense**
+and pre-filled with everything you entered before. Change whatever you
+need and click **Update Expense** to save, or **Cancel** to close the
+pop-up without changing anything. The same required-field and format
+checks apply as when adding.
+
+**To remove an expense:** click the **✕** button on its row.
 
 If an expense's category is later removed in Configuration, the entry
-isn't deleted or broken — it's shown with "Deleted category" in its place.
-
-There is currently no way to edit an existing expense after it's saved;
-delete it and add a corrected one instead.
+isn't deleted or broken — it's shown with "Deleted category" in its place,
+and you can still open it to edit it (for example, to assign it a
+different category).
 
 ## Configuration
 
@@ -136,5 +144,4 @@ storage). It is not uploaded to a server. This means:
 ## What's coming next
 
 Expenses aren't yet connected to your configured Budget Period Start Day —
-there's no view yet that totals or filters your spending by period. That,
-along with editing existing expenses, is planned next.
+there's no view yet that totals or filters your spending by period.

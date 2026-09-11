@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
-import { addExpense as dbAddExpense, deleteExpense as dbDeleteExpense, getAllExpenses } from "../utils/expensesDb.js";
+import {
+  addExpense as dbAddExpense,
+  deleteExpense as dbDeleteExpense,
+  updateExpense as dbUpdateExpense,
+  getAllExpenses,
+} from "../utils/expensesDb.js";
 
 /**
- * Loads expense records from IndexedDB and exposes add/remove helpers that
- * keep local React state in sync with storage.
+ * Loads expense records from IndexedDB and exposes add/update/remove
+ * helpers that keep local React state in sync with storage.
  */
 export function useExpenses() {
   const [expenses, setExpenses] = useState([]);
@@ -32,10 +37,16 @@ export function useExpenses() {
     return record;
   }, []);
 
+  const editExpense = useCallback(async (id, data) => {
+    const record = await dbUpdateExpense(id, data);
+    setExpenses((prev) => prev.map((e) => (e.id === id ? record : e)));
+    return record;
+  }, []);
+
   const removeExpense = useCallback(async (id) => {
     await dbDeleteExpense(id);
     setExpenses((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
-  return { expenses, loading, error, addExpense, removeExpense };
+  return { expenses, loading, error, addExpense, editExpense, removeExpense };
 }

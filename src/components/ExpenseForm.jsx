@@ -10,14 +10,28 @@ function emptyForm() {
   return { expenseTypeId: "", amount: "", date: todayISO(), name: "", description: "" };
 }
 
+function formFromExpense(expense) {
+  return {
+    expenseTypeId: String(expense.expenseTypeId),
+    amount: String(expense.amount),
+    date: expense.date,
+    name: expense.name,
+    description: expense.description || "",
+  };
+}
+
 /**
- * The Add Expense form. Rendered inside a Modal by ExpensesPage; `onCancel`
- * closes it without saving, `onSubmit` (async) is awaited and, on success,
- * the parent closes the modal - this component doesn't manage its own
- * open/closed state.
+ * The Add/Edit Expense form. Rendered inside a Modal by ExpensesPage;
+ * `onCancel` closes it without saving, `onSubmit` (async) is awaited and, on
+ * success, the parent closes the modal - this component doesn't manage its
+ * own open/closed state.
+ *
+ * When `initialValue` (an existing expense record) is passed, the form
+ * pre-fills from it and switches into "edit" mode (heading + button label).
  */
-export default function ExpenseForm({ expenseTypes, onSubmit, onCancel }) {
-  const [form, setForm] = useState(emptyForm);
+export default function ExpenseForm({ expenseTypes, initialValue, onSubmit, onCancel }) {
+  const isEditing = Boolean(initialValue);
+  const [form, setForm] = useState(() => (initialValue ? formFromExpense(initialValue) : emptyForm()));
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -52,7 +66,7 @@ export default function ExpenseForm({ expenseTypes, onSubmit, onCancel }) {
 
   return (
     <>
-      <h2>Add Expense</h2>
+      <h2>{isEditing ? "Edit Expense" : "Add Expense"}</h2>
       <form onSubmit={handleSubmit} noValidate>
         <div className="form-grid">
           <div className="field">
@@ -126,7 +140,7 @@ export default function ExpenseForm({ expenseTypes, onSubmit, onCancel }) {
             Cancel
           </button>
           <button type="submit" className="primary" disabled={submitting}>
-            {submitting ? "Adding…" : "Add Expense"}
+            {isEditing ? (submitting ? "Saving…" : "Update Expense") : submitting ? "Adding…" : "Add Expense"}
           </button>
         </div>
       </form>

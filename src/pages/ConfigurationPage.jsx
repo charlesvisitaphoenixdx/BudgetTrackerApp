@@ -1,11 +1,18 @@
+import BudgetLimitSettings from "../components/BudgetLimitSettings.jsx";
 import ExpenseTypesManager, { SEED_TYPES } from "../components/ExpenseTypesManager.jsx";
 import PeriodSettings from "../components/PeriodSettings.jsx";
 import { useLocalStorageState } from "../hooks/useLocalStorageState.js";
+
+const DEFAULT_BUDGET_LIMITS = { overall: null };
 
 export default function ConfigurationPage() {
   const [types, setTypes] = useLocalStorageState("config.expenseTypes", SEED_TYPES);
   const [startDay, setStartDay] = useLocalStorageState("config.startDay", 1);
   const [previewDate, setPreviewDate] = useLocalStorageState("config.previewDate", "");
+  const [budgetLimits, setBudgetLimits] = useLocalStorageState(
+    "config.budgetLimits",
+    DEFAULT_BUDGET_LIMITS
+  );
 
   return (
     <div className="wrap">
@@ -21,6 +28,7 @@ export default function ConfigurationPage() {
         previewDate={previewDate}
         setPreviewDate={setPreviewDate}
       />
+      <BudgetLimitSettings budgetLimits={budgetLimits} setBudgetLimits={setBudgetLimits} />
     </div>
   );
 }

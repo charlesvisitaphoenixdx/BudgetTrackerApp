@@ -8,6 +8,8 @@
   --accent-soft: #eef0ff;
   --danger: #dc2626;
   --danger-soft: #fef2f2;
+  --success: #16a34a;
+  --success-soft: #ecfdf3;
   color-scheme: light;
 }
 
@@ -22,6 +24,8 @@
     --accent-soft: #262a45;
     --danger: #f87171;
     --danger-soft: #3a2020;
+    --success: #4ade80;
+    --success-soft: #16321f;
     color-scheme: dark;
   }
 }

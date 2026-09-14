@@ -267,8 +267,12 @@ npm run preview      # serve the production build locally, for testing
                       # the built (not dev-mode) app, including PWA bits
 ```
 
-There is no CI pipeline configured yet (no GitHub Actions workflow) — tests
-and the build are currently run manually before pushing.
+`.github/workflows/deploy-pages.yml` runs `npm ci`, `npm test`, and
+`npm run build` on every push to `main`, then deploys `dist/` to GitHub
+Pages — see the README's "Deployment" section. It only covers the
+build/deploy path; there's no separate PR-check workflow yet (e.g. running
+tests on a branch before merge), so tests are still worth running manually
+before pushing if you want feedback before `main` picks it up.
 
 ## PWA configuration
 
@@ -306,7 +310,9 @@ Configured in `vite.config.js` via `VitePWA({...})`:
 - No cross-device sync — data is local to one browser/device
   (by design, per the project's local-first persistence requirement).
 - No automated component/UI test suite yet (see above).
-- No CI configured.
+- (Resolved) CI/deploy is now configured — see "Build & development"
+  above and the README's "Deployment" section. No separate PR-check
+  workflow yet, only the `main`-branch build/deploy.
 - Placeholder PWA icons — functional but not branded.
 - Expense Types currently only have `name` + `color`; no icon, limit, or
   active/inactive fields (explicit scope decision, see

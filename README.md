@@ -3,6 +3,12 @@
 A Progressive Web App (PWA) for tracking budgets against a custom monthly
 budget period.
 
+**Live app:** https://charlesvisitaphoenixdx.github.io/BudgetTrackerApp/ —
+open this on a phone and use the browser's "Add to Home Screen" (iOS
+Safari) or "Install app" (Android Chrome) to install it. Auto-deploys from
+`main` via GitHub Actions (`.github/workflows/deploy-pages.yml`); see
+"Deployment" below.
+
 ## Stack
 
 - React 18 + Vite
@@ -46,6 +52,17 @@ npm test          # run unit tests
 npm run build     # production build (also generates the service worker)
 npm run preview   # preview the production build locally
 ```
+
+## Deployment
+
+Pushing to `main` runs `.github/workflows/deploy-pages.yml`: install, `npm
+test`, `npm run build` (with `GITHUB_PAGES=true` so Vite emits asset paths
+under `/BudgetTrackerApp/`, matching where GitHub Pages serves a project
+repo), then publish `dist/` via GitHub's official Pages Actions. One-time
+setup required in the repo's GitHub settings: **Settings → Pages → Build
+and deployment → Source: "GitHub Actions"** (can't be set from the
+command line). After that, every push to `main` redeploys automatically —
+no manual build/upload step.
 
 ## Documentation
 

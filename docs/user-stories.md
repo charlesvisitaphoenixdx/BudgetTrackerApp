@@ -18,6 +18,17 @@ Summary** feature only.
 > Read "Budget screen" in Stories 2-8 as "Dashboard screen's Selected
 > Period section."
 
+> **2026-09-15 follow-up:** Stories 2-8's acceptance criteria are confirmed
+> still accurate against shipped code, with one exception worth flagging:
+> as shipped, applying the Dashboard's type filter (Story 16) also
+> filtered the Selected Period total, hid "By Category," and suppressed
+> the over/under indicator — something the original Budget screen never
+> did. The new "Dashboard: Budget/Widgets section split" stories below
+> (19-21) correct this and also give the Budget material its own visually
+> distinct section, per direct product-owner feedback. Story 15 and Story
+> 17 (the separate "current-period quick stat") are marked **superseded**
+> below — see Story 19's note.
+
 ## Configuration: Monthly Budget Limit
 
 ### Story 1 — Set an overall monthly budget limit
@@ -293,7 +304,17 @@ recent spending, **so that** I know where to focus if I want to cut back.
   view Top Categories, **then** I see an empty-state message (e.g. "No
   spending yet.") rather than an empty list with no explanation.
 
-### Story 15 — View the current period's quick stat, with or without a budget set
+### Story 15 — View the current period's quick stat, with or without a budget set (superseded)
+
+> **Superseded 2026-09-15:** this story described a stat separate from
+> "Selected Period," but `DashboardPage.jsx` was shipped without a
+> separate quick-stat section — "Selected Period" already defaults to the
+> current period on mount and already carries this exact indicator. See
+> Story 19 in "Dashboard: Budget/Widgets section split" below, which makes
+> this collapse explicit rather than continuing to spec a second section
+> that was never built. The acceptance criteria below still describe real,
+> working behavior — they're just criteria of the Budget group's Selected
+> Period card now, not of a distinct quick stat.
 
 **As a** user, **I want to** see an at-a-glance total (and budget status,
 if I've set one) for the current period right on the Dashboard, **so
@@ -317,39 +338,41 @@ stand right now.
 
 ### Story 16 — Filter the dashboard down to one expense type
 
-**As a** user, **I want to** narrow the whole dashboard to a single
+**As a** user, **I want to** narrow the Dashboard Widgets to a single
 category, **so that** I can see that category's trend on its own, without
 mentally subtracting everything else.
 
+> **Updated 2026-09-15:** the filter now scopes to the "Dashboard Widgets"
+> group only (Spending Trend, Top Categories) — it no longer reaches into
+> the "Budget" group (Selected Period / By Category). See Story 20.
+
 - **Given** the Dashboard screen, **when** I open the type filter
-  dropdown, **then** I see "All types" (selected by default) followed by
-  one entry per configured expense type.
+  dropdown (now located at the top of the "Dashboard Widgets" section),
+  **then** I see "All types" (selected by default) followed by one entry
+  per configured expense type.
 - **Given** I select "Groceries", **when** the filter applies, **then**
   the spending trend recomputes to show only Groceries' spend per period,
-  the current-period quick stat shows only Groceries' total for the
-  current period (with no over/under indicator — see Story 17), and the
-  Top Categories section is hidden entirely (there's only one category to
-  rank once a single type is selected).
+  and the Top Categories section is hidden entirely (there's only one
+  category to rank once a single type is selected). The "Budget" group
+  (Selected Period total, indicator, and By Category breakdown) is
+  unaffected — see Story 20.
 - **Given** a type is selected, **when** I switch the filter back to "All
-  types", **then** every section returns to its unfiltered view,
-  including Top Categories reappearing.
+  types", **then** the Spending Trend and Top Categories sections return
+  to their unfiltered view, including Top Categories reappearing.
 - **Given** I navigate away from the Dashboard (e.g. to Expenses) and
   back, **when** the Dashboard remounts, **then** the filter has reset to
   "All types" — the selection is not persisted across navigation or
   reload.
 
-### Story 17 — A per-type quick stat never shows an over/under badge
+### Story 17 — A per-type quick stat never shows an over/under badge (superseded)
 
-**As a** user filtering to one category, **I want to** understand that
-the quick stat is just a total, not a judgment against a limit, **so
-that** I'm not confused about why no over/under indicator appears.
-
-- **Given** the filter is set to a specific type (e.g. "Groceries") and
-  `config.budgetLimits.overall` is set, **when** I view the quick stat,
-  **then** I see only Groceries' current-period total — no "under"/"over"
-  badge is shown, because there's currently no per-type limit to compare
-  it against (per-type limits are spec'd but deprioritized; see
-  `docs/requirements.md`'s "Feature: Per-Expense-Type Budget Limits").
+> **Superseded 2026-09-15:** along with Story 15, this described the
+> never-separately-built quick stat. It's moot now for a second reason
+> too: the type filter no longer applies to the Budget group's indicator
+> at all (Story 20), so the scenario this story describes ("filtered to
+> one type, indicator suppressed") can no longer occur in the Budget
+> group — the indicator there always evaluates against all types,
+> filter or no filter.
 
 ### Story 18 — Edge cases: a filtered type gets deleted, and deleted-category expenses
 
@@ -365,8 +388,75 @@ unexplained view.
   silently continuing to filter by a type id that no longer exists.
 - **Given** some expenses' `expenseTypeId` no longer matches any
   configured type, **when** the filter is "All types", **then** those
-  expenses are included in the trend and quick-stat totals and appear
-  under "Deleted category" in Top Categories; **when** I open the type
-  filter dropdown, **then** there is no "Deleted category" option to
+  expenses are included in the trend totals and appear under "Deleted
+  category" in Top Categories (and, regardless of filter state, always in
+  the Budget group's total/breakdown — see Story 20); **when** I open the
+  type filter dropdown, **then** there is no "Deleted category" option to
   select — those expenses can only be viewed in aggregate via "All
   types", not isolated on their own.
+
+## Dashboard: Budget/Widgets section split
+
+### Story 19 — See the Budget material and the Dashboard widgets as two distinct sections
+
+**As a** user, **I want to** clearly tell apart "my current budget status"
+from "my spending trends and top categories," **so that** the Dashboard
+screen feels organized instead of one long undifferentiated scroll.
+
+- **Given** the Dashboard screen, **when** I open it, **then** I see two
+  clearly labeled groups, in order: a **"Budget"** section (containing
+  period navigation, the selected period's total, its over/under
+  indicator, and its full "By Category" breakdown) and a **"Dashboard
+  Widgets"** section (containing the expense-type filter, "Spending
+  Trend", and "Top Categories"), visually separated by a heading for each
+  group and a divider between them.
+- **Given** the Budget section, **when** I open the Dashboard, **then** it
+  shows the current period by default (same as before this change) — this
+  is the single place that answers "where do I stand right now," replacing
+  the separately-specified "current-period quick stat" (Story 15,
+  superseded) which was never built as a distinct section in the first
+  place.
+- **Given** the two sections, **when** I compare their headings, **then**
+  "Budget" and "Dashboard Widgets" are a visually larger/more prominent
+  heading tier than the individual card titles within them ("Selected
+  Period", "By Category", "Spending Trend", "Top Categories"), so the
+  grouping is legible at a glance.
+
+### Story 20 — The Budget section ignores the expense-type filter
+
+**As a** user, **I want to** my overall budget total, indicator, and
+category breakdown to always reflect all my spending, **so that** turning
+on a category filter (meant for spotting trends) never silently hides my
+real budget status.
+
+- **Given** the type filter (in the "Dashboard Widgets" section) is set to
+  a specific type, e.g. "Groceries", **when** I look at the "Budget"
+  section, **then** the selected period's total, its over/under/no-budget
+  indicator, and its "By Category" breakdown all reflect **all** expense
+  types for that period — none of them change based on the filter.
+- **Given** the same filter state, **when** I switch the filter back to
+  "All types", **then** the Budget section's display is unchanged (it was
+  never affected in the first place).
+- **Given** a period with expenses in multiple categories, **when** I view
+  "By Category" in the Budget section, **then** it always renders (it's no
+  longer hidden when a specific type is selected in the filter, as it was
+  before this change).
+
+### Story 21 — Period navigation and indicator states are unchanged by the restructure
+
+**As a** user, **I want to** the existing Previous/Next/current-period
+navigation, the over/under indicator states, and the per-category
+breakdown rules to keep working exactly as before, **so that** this is a
+layout change, not a behavior regression.
+
+- **Given** the Budget section, **when** I click "Previous" or "Next",
+  **then** it navigates periods exactly as it did before this change
+  (Stories 6-7), independent of the type filter and of the Dashboard
+  Widgets section's 6-period trend window (which always tracks the real
+  current period, per the Spending Dashboard feature).
+- **Given** the over/under/no-budget-set indicator, **when** I evaluate it
+  for any period, **then** it uses the same inclusive-boundary rule as
+  before (spend exactly equal to the limit is "under") — see Story 3.
+- **Given** the "By Category" breakdown, **when** I view it, **then** it
+  still omits zero-spend types and groups unresolved `expenseTypeId`s
+  under "Deleted category", exactly as specified in Story 5.

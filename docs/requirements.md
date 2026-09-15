@@ -318,6 +318,20 @@ each other's results.
 > browsing). The original one-job-per-screen rationale is kept below for
 > its historical reasoning, not as the current architecture.
 
+> **2026-09-15 follow-up:** re-verified directly against the shipped
+> `src/pages/DashboardPage.jsx` — the period navigation (Previous/Next/Back
+> to current period), the total/over-under indicator, and the full
+> per-category breakdown described above are real and working today, not
+> merely spec'd. The gap the product owner raised is UX/structural, not
+> functional: the "Selected Period"/"By Category" material (the restored
+> Budget job) and the "Spending Trend"/"Top Categories" material (the new
+> Dashboard job) render as one undifferentiated stack of cards with no
+> visual grouping, and today's expense-type filter also reaches into the
+> Budget material — hiding "By Category" and nulling the indicator when a
+> single type is selected — which the original Budget screen never did
+> (it was never filterable). See "Feature: Dashboard/Budget Section Split"
+> below for the fix.
+
 ### Problem
 
 Expenses gives a raw list of transactions; Budget gives a single period's
@@ -475,3 +489,185 @@ not persisted.
   `overall`-limit state dictates (no-budget-set / under / over per the
   table above) — consistent with how Budget already handles a
   zero-expense period.
+
+## Feature: Dashboard/Budget Section Split
+
+### Problem
+
+The Spending Dashboard feature above successfully merged the old Budget
+screen's job (period navigation, a total, an over/under indicator, a full
+per-category breakdown) into `DashboardPage.jsx`, and it did so completely
+— see the "2026-09-15 follow-up" note above the Spending Dashboard
+feature's Problem section: nothing is missing functionally. But the
+product owner's direct feedback (2026-09-15) is that the merged screen
+isn't user-friendly: *"I wanted the dashboard ui to be more user friendly.
+I think we should have separate section for the 'budget' section we moved
+from the old 'Budget' module and the dashboard widgets."*
+
+Two concrete problems, both structural rather than missing functionality:
+
+1. **No visual grouping.** "Selected Period", "By Category", "Spending
+   Trend", and "Top Categories" all render as same-weight `.card` sections
+   in one undifferentiated stack. A user can't tell at a glance which
+   cards answer "where do I stand right now" (the Budget job) versus
+   "what's my pattern across periods" (the Dashboard-widgets job).
+2. **The type filter over-reaches into the Budget material.** Today,
+   selecting a specific expense type in the filter also filters the
+   Selected Period total, hides the "By Category" card entirely, and nulls
+   out the over/under indicator (`DashboardPage.jsx`'s `budgetStatus`
+   becomes `null` whenever `filterId !== "all"`). The original standalone
+   Budget screen (Stories 2-8) was **never** filterable by type — "how much
+   have I spent, in total, this period, against my limit" shouldn't change
+   meaning based on a filter meant for spotting cross-period trends in one
+   category. This conflation is likely a contributor to the "not user
+   friendly" feedback: applying the filter silently makes budget-status
+   information disappear.
+
+### Scope decision: two visually distinct groups on the same screen; Budget group ignores the type filter; retire the separate "current-period quick stat" concept
+
+**One screen, two groups, not a new route.** Per the product owner's own
+wording ("separate section," singular screen) and reconfirmed scope (no
+new top-nav item), `DashboardPage.jsx` gets restructured internally into
+two adjacent, clearly labeled groups — **not** a return to a standalone
+Budget page. This preserves the "Dashboard" nav entry and the single-screen
+architecture; only the internal layout and a few data dependencies change.
+
+**Group contents:**
+
+- **"Budget" group** — the restored-Budget-screen material: period
+  navigation (Previous/Next/Back to current period), the selected period's
+  total, its over/under/no-budget-set indicator, and its full per-category
+  breakdown ("By Category"). Always computed against **all** expense types,
+  regardless of the type filter — see next point.
+- **"Dashboard Widgets" group** — the cross-period material: the
+  expense-type filter control itself, "Spending Trend" (6 periods), and
+  "Top Categories". The filter continues to drive these two sections
+  exactly as it does today.
+
+**Why the Budget group stops respecting the type filter:** the filter's
+job (per the original Spending Dashboard spec) is to let a user "see that
+category's trend on its own" across periods — a Dashboard-widgets concern.
+Applying it to the Budget group's total/indicator/breakdown conflates two
+different questions ("what's my overall status" vs. "how is this one
+category trending") and was never how the pre-merge Budget screen behaved.
+Moving the filter's effect to widgets-only both fixes problem 2 above and
+gives the visual split in problem 1 a real behavioral basis — the two
+groups aren't just styled differently, they now respond to different
+controls, which reinforces that they answer different questions.
+
+**Why the "current-period quick stat" (Spending Dashboard spec, "In scope"
+item 5; Stories 15 and 17) is retired as a separate concept, not
+relocated:** that quick stat's entire job — current period's total, plus
+an over/under badge in "All types" mode — is already subsumed by the
+Budget group's "Selected Period" card, which already defaults to the
+current period on every mount (`DashboardPage.jsx`'s `period` state
+initializes to `currentPeriod`) and already carries the identical
+indicator. `DashboardPage.jsx` was in fact never built with a *separate*
+quick-stat section distinct from "Selected Period" — the two concepts
+already collapsed into one implementation during the original merge. This
+feature makes that collapse explicit in the spec rather than continuing to
+describe a second thing that doesn't exist in the code. No behavior is
+removed for the user: "open Dashboard, immediately see current period's
+total and budget status" still works exactly the same, via the Budget
+group's default state.
+
+### In scope (this increment)
+
+1. Restructure `DashboardPage.jsx`'s render output into two wrapping
+   groups, in this order (Budget first, since "where do I stand" is the
+   more time-sensitive question on open):
+   - `<section className="dashboard-group dashboard-group-budget">` with a
+     `<h2 className="dashboard-group-title">Budget</h2>`, containing the
+     existing period-nav `.card`, the existing Selected Period `.card`,
+     and the existing By Category `.card` (unchanged internal markup other
+     than the heading-level change in item 3 below).
+   - A `<hr className="dashboard-divider" />` between the two groups.
+   - `<section className="dashboard-group dashboard-group-widgets">` with
+     a `<h2 className="dashboard-group-title">Dashboard Widgets</h2>`,
+     containing the expense-type-filter `.card` (moved here from its
+     current position above the period-nav card), the Spending Trend
+     `.card`, and the Top Categories `.card`.
+2. **Budget group stops depending on the type filter:**
+   - `selectedTotal` is computed from the full `selectedPeriodExpenses`
+     (drop the `filterTypeId` branch currently in its `useMemo`) — always
+     the period's all-types total.
+   - `budgetStatus` is computed from that unfiltered `selectedTotal`
+     unconditionally — drop the `filterId !== "all" ? null : ...` branch;
+     it's always `"none"`/`"under"`/`"over"` per the existing table in the
+     Budget Period Spending Summary feature above, never `null`.
+   - The "By Category" card (`selectedBreakdown`) always renders — drop
+     the `{filterId === "all" && (...)}` guard around it. `groupByCategory`
+     keeps running over the full `selectedPeriodExpenses`, not a
+     filter-narrowed subset.
+3. **Heading hierarchy:** promote the two new group headings to `<h2>`
+   (see item 1) and demote each card's own existing title — "Selected
+   Period", "By Category", "Spending Trend", "Top Categories" — from `<h2>`
+   to `<h3>`, so there's one clear heading level per grouping tier. The
+   period-nav card keeps its current no-heading layout (it's identified by
+   the group title above it).
+4. **Filter card relocates** to the top of the "Dashboard Widgets" group
+   (immediately above "Spending Trend"), replacing its current position
+   above the period-nav card. Its behavior is unchanged: it still drives
+   `filterTypeId` for the Spending Trend computation (`periodTotals`) and
+   still hides the Top Categories card when `filterId !== "all"`.
+5. **New CSS** (`src/App.css`, under a new `/* Dashboard section groups */`
+   comment near the existing `/* Dashboard screen */` block):
+   - `.dashboard-group` — spacing wrapper only (e.g. `margin-bottom`
+     consistent with the existing `.card` rhythm); no border/background of
+     its own — the `.card`s inside keep their existing look.
+   - `.dashboard-group-title` — reuse the existing small-caps-label
+     treatment already established by `.period-preview .label` (`font-size:
+     12px`, `font-weight: 600`, `color: var(--accent)`, `text-transform:
+     uppercase`, `letter-spacing: 0.03em`), sized up slightly (e.g.
+     `font-size: 13px`) since it's a higher heading tier than that label,
+     with `margin-bottom` spacing before the first card in its group.
+   - `.dashboard-divider` — a plain horizontal rule reusing the existing
+     hairline convention from `.note` (`border-top: 1px solid
+     var(--border)`), no visible `<hr>` default styling (reset `border:
+     none; border-top: 1px solid var(--border);`), with vertical margin
+     matching the existing `.card` gap (`margin: 4px 0 20px`, i.e. flush
+     with the group spacing above/below it).
+   - No new color tokens needed — everything above reuses `--accent`,
+     `--border`, and existing spacing values already in `App.css`.
+
+### Out of scope (explicitly, this increment)
+
+- **A separate Budget page/route or a restored third top-nav item.** The
+  product owner explicitly asked for a "section," not a page; "Dashboard"
+  remains the only nav entry covering this material.
+- **Changing what the period-nav, Selected Period, By Category, Spending
+  Trend, or Top Categories cards compute or display**, beyond the type-
+  filter decoupling in "In scope" item 2. No new fields, no new
+  aggregation logic.
+- **Persisting the type filter or the selected period** across navigation
+  or reload — both remain ephemeral component state, same as today.
+- **Making the two groups collapsible/expandable, tabs, or otherwise
+  interactive beyond a static visual/structural split.** A plain heading +
+  divider + card-grouping split is sufficient to answer the "not user
+  friendly" feedback; collapsing/tabs is a future enhancement if the
+  simpler split proves insufficient once used.
+- **Any change to per-type budget limits, charting, or the other
+  deprioritized/future items already tracked** in the Per-Expense-Type
+  Budget Limits and Spending Dashboard features above — this increment
+  only restructures and re-scopes what already exists.
+
+### Data model additions
+
+None. This feature makes no `localStorage` changes and adds no new keys —
+it re-reads exactly the same state the Spending Dashboard feature already
+reads (`config.expenseTypes`, `config.startDay`,
+`config.budgetLimits.overall`, expense records via `useExpenses()`). The
+type filter (`filterId`) and the browsed period (`period`) remain
+component-local `useState`, non-persisted, exactly as today — this
+increment only narrows *which* sections `filterId` affects.
+
+### Edge cases
+
+| Case | Behavior |
+|---|---|
+| Type filter has a type selected, user looks at the Budget group | Total, indicator, and By Category breakdown all show **all types**, unaffected by the filter — this is the point of the decoupling in "In scope" item 2, not an edge case to guard against, but called out here since it's a visible behavior change from what's shipped today. |
+| Type filter has a type selected, user looks at the Dashboard Widgets group | Unchanged from the current Spending Dashboard behavior: Spending Trend narrows to that type, Top Categories is hidden. |
+| The filtered type is deleted from Configuration while Dashboard is open | Unchanged from Story 18's existing behavior: the filter resets to "All types" (`DashboardPage.jsx`'s existing `useEffect` watching `expenseTypes`/`filterId`). Since the Budget group no longer reads the filter at all, this reset only visibly affects the Widgets group. |
+| Zero expenses in the selected period (Budget group) | Unchanged from existing behavior: `$0.00` total, "No expenses logged in this period yet." in By Category, and the indicator still evaluates (`"none"`/`"under"` at `$0.00`). |
+| Zero expenses across the whole 6-period trend window (Widgets group) | Unchanged: all 6 trend rows show `$0.00`/empty bars, Top Categories shows "No spending yet." |
+| Fewer than 6 real periods of history | Unchanged: all 6 trend slots still render via `periodFor`/`shiftPeriod`. |

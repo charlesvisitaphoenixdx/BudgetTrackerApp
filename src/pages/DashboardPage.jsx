@@ -38,12 +38,13 @@ function groupByCategory(expenses, expenseTypes) {
 }
 
 /**
- * Single screen combining what used to be the separate Budget screen (a
- * navigable period's total/over-under status and category breakdown) with
- * the Dashboard's own cross-period view (a fixed 6-period trend and top
- * categories), plus an optional expense-type filter that narrows all of it.
- * The trend/top-categories window always tracks the real current period,
- * independent of whichever period the Selected Period section is browsing.
+ * Single screen split into two visually distinct groups: "Budget" (period
+ * navigation, selected period total/over-under status, and full category
+ * breakdown — always computed across all expense types) and "Dashboard
+ * Widgets" (the expense-type filter plus the cross-period Spending Trend and
+ * Top Categories, which the filter narrows exactly as before). The
+ * trend/top-categories window always tracks the real current period,
+ * independent of whichever period the Budget group is browsing.
  */
 export default function DashboardPage({ onGoToConfiguration }) {
   const [expenseTypes] = useLocalStorageState("config.expenseTypes", SEED_TYPES);
@@ -85,28 +86,17 @@ export default function DashboardPage({ onGoToConfiguration }) {
   }, [expenses, period]);
 
   const selectedTotal = useMemo(() => {
-    const filtered =
-      filterTypeId != null
-        ? selectedPeriodExpenses.filter((exp) => exp.expenseTypeId === filterTypeId)
-        : selectedPeriodExpenses;
-    const sum = filtered.reduce((acc, exp) => acc + Number(exp.amount), 0);
+    const sum = selectedPeriodExpenses.reduce((acc, exp) => acc + Number(exp.amount), 0);
     return Math.round(sum * 100) / 100;
-  }, [selectedPeriodExpenses, filterTypeId]);
+  }, [selectedPeriodExpenses]);
 
-  const selectedBreakdown = useMemo(() => {
-    if (filterId !== "all") return [];
-    return groupByCategory(selectedPeriodExpenses, expenseTypes);
-  }, [filterId, selectedPeriodExpenses, expenseTypes]);
+  const selectedBreakdown = useMemo(
+    () => groupByCategory(selectedPeriodExpenses, expenseTypes),
+    [selectedPeriodExpenses, expenseTypes]
+  );
 
   const overall = budgetLimits?.overall ?? null;
-  const budgetStatus =
-    filterId !== "all"
-      ? null
-      : overall == null
-        ? "none"
-        : selectedTotal <= overall
-          ? "under"
-          : "over";
+  const budgetStatus = overall == null ? "none" : selectedTotal <= overall ? "under" : "over";
 
   const periods = useMemo(() => {
     const list = [currentPeriod];
@@ -154,77 +144,64 @@ export default function DashboardPage({ onGoToConfiguration }) {
         <p>Browse any budget period, and spot spending trends across recent ones.</p>
       </header>
 
-      <section className="card">
-        <div className="field">
-          <label htmlFor="dashboardFilter">Expense type</label>
-          <select id="dashboardFilter" value={filterId} onChange={(e) => setFilterId(e.target.value)}>
-            <option value="all">All types</option>
-            {expenseTypes.map((t) => (
-              <option key={t.id} value={String(t.id)}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </section>
-
-      <section className="card">
-        <div className="budget-nav-row">
-          <button type="button" className="secondary" onClick={goPrevious}>
-            ← Previous
-          </button>
-          <div className="period-preview budget-period-preview">
-            <div className="label">Period</div>
-            <div className="range">
-              {fmt(period.start)} <span className="arrow">→</span> {fmt(period.end)}
-            </div>
-          </div>
-          <button type="button" className="secondary" onClick={goNext}>
-            Next →
-          </button>
-        </div>
-        {!isCurrentPeriod && (
-          <button type="button" className="link-btn budget-today-link" onClick={goToCurrentPeriod}>
-            Back to current period
-          </button>
-        )}
-      </section>
-
       {error && <p className="error-msg">{error}</p>}
+      {loading && <p className="sub">Loading…</p>}
 
-      {loading ? (
-        <p className="sub">Loading…</p>
-      ) : (
-        <>
-          <section className="card">
-            <h2>Selected Period</h2>
-            <p className="budget-total">{formatAmount(selectedTotal)}</p>
+      <section className="dashboard-group dashboard-group-budget">
+        <h2 className="dashboard-group-title">Budget</h2>
 
-            {budgetStatus === "none" && (
-              <p className="sub">
-                No budget set for this period.{" "}
-                <button type="button" className="link-btn" onClick={onGoToConfiguration}>
-                  Set one in Configuration
-                </button>
-              </p>
-            )}
-            {budgetStatus === "under" && (
-              <p className="budget-status budget-status-under">
-                {formatAmount(selectedTotal)} of {formatAmount(overall)} —{" "}
-                {formatAmount(overall - selectedTotal)} remaining
-              </p>
-            )}
-            {budgetStatus === "over" && (
-              <p className="budget-status budget-status-over">
-                {formatAmount(selectedTotal)} of {formatAmount(overall)} —{" "}
-                {formatAmount(selectedTotal - overall)} over budget
-              </p>
-            )}
-          </section>
+        <section className="card">
+          <div className="budget-nav-row">
+            <button type="button" className="secondary" onClick={goPrevious}>
+              ← Previous
+            </button>
+            <div className="period-preview budget-period-preview">
+              <div className="label">Period</div>
+              <div className="range">
+                {fmt(period.start)} <span className="arrow">→</span> {fmt(period.end)}
+              </div>
+            </div>
+            <button type="button" className="secondary" onClick={goNext}>
+              Next →
+            </button>
+          </div>
+          {!isCurrentPeriod && (
+            <button type="button" className="link-btn budget-today-link" onClick={goToCurrentPeriod}>
+              Back to current period
+            </button>
+          )}
+        </section>
 
-          {filterId === "all" && (
+        {!loading && (
+          <>
             <section className="card">
-              <h2>By Category</h2>
+              <h3>Selected Period</h3>
+              <p className="budget-total">{formatAmount(selectedTotal)}</p>
+
+              {budgetStatus === "none" && (
+                <p className="sub">
+                  No budget set for this period.{" "}
+                  <button type="button" className="link-btn" onClick={onGoToConfiguration}>
+                    Set one in Configuration
+                  </button>
+                </p>
+              )}
+              {budgetStatus === "under" && (
+                <p className="budget-status budget-status-under">
+                  {formatAmount(selectedTotal)} of {formatAmount(overall)} —{" "}
+                  {formatAmount(overall - selectedTotal)} remaining
+                </p>
+              )}
+              {budgetStatus === "over" && (
+                <p className="budget-status budget-status-over">
+                  {formatAmount(selectedTotal)} of {formatAmount(overall)} —{" "}
+                  {formatAmount(selectedTotal - overall)} over budget
+                </p>
+              )}
+            </section>
+
+            <section className="card">
+              <h3>By Category</h3>
               {selectedBreakdown.length === 0 ? (
                 <p className="empty">No expenses logged in this period yet.</p>
               ) : (
@@ -239,53 +216,77 @@ export default function DashboardPage({ onGoToConfiguration }) {
                 </div>
               )}
             </section>
-          )}
+          </>
+        )}
+      </section>
 
-          <section className="card">
-            <h2>Spending Trend</h2>
-            <p className="sub">Current period and the 5 before it.</p>
-            <div className="trend-list">
-              {periods.map((p, i) => {
-                const total = periodTotals[i];
-                const width = maxPeriodTotal > 0 ? (total / maxPeriodTotal) * 100 : 0;
-                return (
-                  <div className="trend-row" key={p.start.getTime()}>
-                    <div className="trend-range">
-                      {fmt(p.start)} → {fmt(p.end)}
-                    </div>
-                    <div className="trend-bar-row">
-                      <div className="trend-bar-track">
-                        <div className="trend-bar-fill" style={{ width: `${width}%` }} />
-                      </div>
-                      <div className="trend-amount">{formatAmount(total)}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+      <hr className="dashboard-divider" />
 
-          {filterId === "all" && (
+      <section className="dashboard-group dashboard-group-widgets">
+        <h2 className="dashboard-group-title">Dashboard Widgets</h2>
+
+        <section className="card">
+          <div className="field">
+            <label htmlFor="dashboardFilter">Expense type</label>
+            <select id="dashboardFilter" value={filterId} onChange={(e) => setFilterId(e.target.value)}>
+              <option value="all">All types</option>
+              {expenseTypes.map((t) => (
+                <option key={t.id} value={String(t.id)}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </section>
+
+        {!loading && (
+          <>
             <section className="card">
-              <h2>Top Categories</h2>
-              {topCategories.length === 0 ? (
-                <p className="empty">No spending yet.</p>
-              ) : (
-                <div className="budget-breakdown">
-                  {topCategories.map((row) => (
-                    <div className="budget-breakdown-row" key={row.key}>
-                      <span className="dot" style={{ background: row.color }} title={row.label} />
-                      <span className="budget-breakdown-label">{row.label}</span>
-                      <span className="budget-breakdown-pct">{row.pct.toFixed(1)}%</span>
-                      <span className="budget-breakdown-amount">{formatAmount(row.amount)}</span>
+              <h3>Spending Trend</h3>
+              <p className="sub">Current period and the 5 before it.</p>
+              <div className="trend-list">
+                {periods.map((p, i) => {
+                  const total = periodTotals[i];
+                  const width = maxPeriodTotal > 0 ? (total / maxPeriodTotal) * 100 : 0;
+                  return (
+                    <div className="trend-row" key={p.start.getTime()}>
+                      <div className="trend-range">
+                        {fmt(p.start)} → {fmt(p.end)}
+                      </div>
+                      <div className="trend-bar-row">
+                        <div className="trend-bar-track">
+                          <div className="trend-bar-fill" style={{ width: `${width}%` }} />
+                        </div>
+                        <div className="trend-amount">{formatAmount(total)}</div>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                  );
+                })}
+              </div>
             </section>
-          )}
-        </>
-      )}
+
+            {filterId === "all" && (
+              <section className="card">
+                <h3>Top Categories</h3>
+                {topCategories.length === 0 ? (
+                  <p className="empty">No spending yet.</p>
+                ) : (
+                  <div className="budget-breakdown">
+                    {topCategories.map((row) => (
+                      <div className="budget-breakdown-row" key={row.key}>
+                        <span className="dot" style={{ background: row.color }} title={row.label} />
+                        <span className="budget-breakdown-label">{row.label}</span>
+                        <span className="budget-breakdown-pct">{row.pct.toFixed(1)}%</span>
+                        <span className="budget-breakdown-amount">{formatAmount(row.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+          </>
+        )}
+      </section>
     </div>
   );
 }

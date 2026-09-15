@@ -324,6 +324,17 @@ Configured in `vite.config.js` via `VitePWA({...})`:
   than deleted outright, since other sections of this file (e.g. "Project
   structure", "two screens" above) haven't been fully updated to reflect
   the Budget/Dashboard screens yet — treat those as stale until revisited.
+- **(Planned, not yet shipped as of 2026-09-15) Dashboard/Budget visual
+  split.** All of the above is functionally complete, but it currently
+  renders as one undifferentiated stack of cards, and the expense-type
+  filter incorrectly also filters the Budget material (total, indicator,
+  "By Category") — the original standalone Budget screen was never
+  filterable. `docs/requirements.md`'s "Feature: Dashboard/Budget Section
+  Split" specs the fix: two visually distinct groups ("Budget" and
+  "Dashboard Widgets") on the same screen, with the type filter scoped to
+  the widgets group only. Not yet implemented — this is the target state
+  the spec defines, for a DEV to build next, not a claim that it's already
+  in `DashboardPage.jsx`.
 - No currency or locale handling: amounts have no currency symbol, and
   always use `en-US`-style grouping (e.g. `9,999,999.99`) regardless of the
   user's actual locale, via `formatAmount()`.

@@ -203,9 +203,6 @@ storage). It is not uploaded to a server. This means:
 
 ## What's coming next
 
-- **Per-category budget limits.** Today's Monthly Budget Limit applies to
-  your overall spending only — there's no way yet to cap an individual
-  category (e.g. keep "Groceries" under $400 on its own).
 - **Currency and locale.** Amounts don't show a currency symbol and always
   group digits the US way (e.g. `9,999,999.99`), regardless of your
   device's own locale settings.

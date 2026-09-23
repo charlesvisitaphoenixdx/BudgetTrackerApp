@@ -20,11 +20,11 @@ created, read, updated, and persisted directly in the browser.
 
 No state-management library (Redux/Zustand/etc.) or CSS framework is in
 use — plain `useState`/custom hooks and hand-written CSS are sufficient so
-far. There's also no routing library: with two screens, `App.jsx` just
-keeps a `screen` string in `useState` and conditionally renders one page or
-the other, with a couple of nav buttons to switch. Revisit this if the app
-grows enough screens to make that unwieldy (e.g. needing deep-linkable
-URLs).
+far. There's also no routing library: with three screens (Expenses,
+Dashboard, Configuration), `App.jsx` just keeps a `screen` string in
+`useState` and conditionally renders one page at a time, with nav buttons
+to switch. Revisit this if the app grows enough screens to make that
+unwieldy (e.g. needing deep-linkable URLs).
 
 ## Project structure
 
@@ -82,8 +82,10 @@ All Configuration data lives in `localStorage` under these keys (see
   total spending across all expense types for the active period on the
   Dashboard screen's Budget group. `null`/absent both mean "no limit set" —
   see `claude/requirements.md`'s "Budget limit scope" decision for why this
-  is an object rather than a bare number (room for a future per-type
-  `byType` map without a migration).
+  is an object rather than a bare number. A sibling `byType` key was
+  proposed (to hold per-expense-type limits) and rejected outright on
+  2026-09-23, not merely deferred — see `claude/requirements.md`'s
+  2026-09-23 decision log entry. This object stays `{ overall }`-only.
 
 `useLocalStorageState(key, initialValue)` mirrors the `useState` API: it
 lazily reads `localStorage` on mount (falling back to `initialValue` if
@@ -323,16 +325,16 @@ Configured in `vite.config.js` via `VitePWA({...})`:
   above and the README's "Deployment" section. No separate PR-check
   workflow yet, only the `main`-branch build/deploy.
 - Placeholder PWA icons — functional but not branded.
-- Expense Types currently only have `name` + `color`; no icon, limit, or
-  active/inactive fields (explicit scope decision, see
-  `claude/requirements.md`).
+- Expense Types currently only have `name` + `color`; no icon or
+  active/inactive fields. A per-type spending *limit* was also considered
+  (spec'd 2026-09-11) and rejected outright on 2026-09-23, not merely
+  deferred — see `claude/requirements.md`'s decision log — so `name` +
+  `color` is expected to remain the type's full shape, not a placeholder
+  for a limit field.
 - (Resolved) Expenses are now connected to the configured Budget Period
   Start Day via the Dashboard screen (`src/pages/DashboardPage.jsx`):
   per-period totals, an over/under indicator, a per-category breakdown,
-  and a 6-period trend. This bullet is kept as a changelog marker rather
-  than deleted outright, since other sections of this file (e.g. "Project
-  structure", "two screens" above) haven't been fully updated to reflect
-  the Budget/Dashboard screens yet — treat those as stale until revisited.
+  and a 6-period trend.
 - **(Resolved, 2026-09-15) Dashboard/Budget visual split.** `DashboardPage.jsx`
   now renders two visually distinct, labeled groups — "Budget" (period nav,
   Selected Period total/indicator, By Category breakdown, always computed

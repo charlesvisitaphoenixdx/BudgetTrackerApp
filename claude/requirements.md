@@ -82,6 +82,39 @@ buildable spec — this file holds the standing decisions that constrain it.
 Newest first. Each entry: date, decision, rationale, and what it rules
 out for now.
 
+### 2026-09-23 — Per-Expense-Type Budget Limits: rejected outright, not deferred
+
+**Decision:** The Per-Expense-Type Budget Limits feature (spec'd
+2026-09-11, an optional per-type limit input in `ExpenseTypesManager` plus
+a `config.budgetLimits.byType` map and per-type over/under indicator on
+the Budget screen) will **not** be built. This supersedes its prior status
+of "spec'd, then deprioritized" — it's now a closed decision, not an open
+backlog item awaiting a future increment. The detailed spec has been
+removed from `docs/requirements.md` and `docs/user-stories.md` (Stories
+9-12), each replaced with a short dated marker pointing back to this
+entry, rather than left in place as a "someday" increment.
+
+**Rationale:** Direct product-owner decision — the overall monthly budget
+limit (`config.budgetLimits.overall`), already shipped, is judged
+sufficient; a second, independent per-category limit mechanism was
+deemed not worth the added Configuration UI surface and cognitive load
+(a limit input per row, its own validation, a second indicator style to
+learn) for value that overlaps with the existing read-only per-type
+spend breakdown already on the Budget screen.
+
+**Trade-off accepted:** Users still can't cap an individual category
+independently of the overall limit (e.g. "no more than $200 on
+Entertainment even if the household total is fine") — they can only see
+per-type *spend*, never set a per-type *ceiling*. Unlike the original
+2026-09-11 deferral, this is now an accepted permanent limitation, not a
+staged rollout.
+
+**What this doesn't rule out:** `config.budgetLimits` keeps its
+`{ overall }` object shape (not reverted to a bare number) since that
+costs nothing to leave as-is; if a per-type limit is ever reconsidered
+later, that would need to be a fresh, explicit decision on its own
+merits, not a resumption of this one.
+
 ### 2026-09-15 — Dashboard/Budget Section Split: two groups on one screen, not a new page
 
 **Decision:** When the merged Dashboard screen's UX was found confusing

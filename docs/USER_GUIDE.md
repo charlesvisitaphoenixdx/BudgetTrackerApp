@@ -2,8 +2,9 @@
 
 BudgetTrackerApp helps you track your spending against a budget period that
 you define — not necessarily the calendar month. This guide covers what's
-available today: the **Expenses** screen and the **Configuration** screen,
-which you can switch between using the two buttons at the top of the app.
+available today: the **Expenses**, **Dashboard**, and **Configuration**
+screens, which you can switch between using the three buttons at the top
+of the app.
 
 ## Installing the app
 
@@ -73,6 +74,53 @@ isn't deleted or broken — it's shown with "Deleted category" in its place,
 and you can still open it to edit it (for example, to assign it a
 different category).
 
+## Dashboard
+
+The Dashboard screen answers two questions: "where do I stand right now,"
+and "what's my spending pattern been lately." It's split into two sections.
+
+### Budget
+
+Shows the budget period you're currently viewing — by default, the one
+containing today's date — with:
+
+- The period's date range (e.g. Sep 1 – Sep 30).
+- Your total spend for that period.
+- If you've set a Monthly Budget Limit in Configuration, whether you're
+  under or over it, and by how much. If you haven't set one yet, you'll
+  see a message and a link to Configuration instead.
+- **By Category** — a breakdown of that period's spend by expense type. A
+  category with no spend in the period simply doesn't appear in the list.
+  Expenses whose category was later deleted are grouped under "Deleted
+  category."
+
+Use **← Previous** / **Next →** to browse other periods; a **Back to
+current period** link appears whenever you've navigated away from today's
+period. The Budget section always reflects **all** your expense types,
+regardless of any filter set in Dashboard Widgets below it — it answers
+"how am I doing overall," so it isn't narrowed by a category filter.
+
+### Dashboard Widgets
+
+Shows patterns across the current period and the 5 before it (6 periods
+total):
+
+- **Expense type filter** — narrow the widgets below to a single category,
+  or leave it on "All types." (This filter only affects the two sections
+  below it, not the Budget section above.)
+- **Spending Trend** — each of the 6 periods, its date range, its total
+  spend, and a bar sized relative to the highest-spending period in the
+  window, so you can spot whether spending is trending up or down at a
+  glance. A period with no spending still shows its own $0.00 row rather
+  than being skipped.
+- **Top Categories** — your categories ranked by total spend across that
+  same 6-period window, with each one's share of the total as a
+  percentage. Only shown when the filter is "All types" (with a single
+  category selected, there's nothing left to rank).
+
+The filter resets to "All types" every time you leave and come back to the
+Dashboard — it's not remembered across navigation or a reload.
+
 ## Configuration
 
 The Configuration screen is where you set up how the app organizes your
@@ -129,6 +177,17 @@ particular day falls into — handy for confirming the setting behaves the
 way you expect before you rely on it. The screen also shows you the
 previous and next periods for context, so you can see the pattern.
 
+### Monthly Budget Limit
+
+An optional overall spending limit for each budget period, checked against
+your total spending across all expense types (not per-category). Leave it
+blank if you don't want to track against a limit — the Dashboard will just
+show your total with no over/under status. Enter a positive amount (e.g.
+`1200` or `1200.50`) to turn tracking on; clear the field to turn it back
+off. If you enter `0`, a negative number, or something that isn't a valid
+amount, you'll see an inline error and the field will keep its last valid
+value.
+
 ## Where is my data stored?
 
 Everything you enter — expense types, your start day setting, and every
@@ -144,5 +203,12 @@ storage). It is not uploaded to a server. This means:
 
 ## What's coming next
 
-Expenses aren't yet connected to your configured Budget Period Start Day —
-there's no view yet that totals or filters your spending by period.
+- **Per-category budget limits.** Today's Monthly Budget Limit applies to
+  your overall spending only — there's no way yet to cap an individual
+  category (e.g. keep "Groceries" under $400 on its own).
+- **Currency and locale.** Amounts don't show a currency symbol and always
+  group digits the US way (e.g. `9,999,999.99`), regardless of your
+  device's own locale settings.
+- **Cross-device sync.** Your data stays on the device/browser you entered
+  it on — there's currently no way to see the same data on a second device
+  without setting everything up again there.

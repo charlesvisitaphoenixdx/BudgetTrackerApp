@@ -82,6 +82,62 @@ buildable spec — this file holds the standing decisions that constrain it.
 Newest first. Each entry: date, decision, rationale, and what it rules
 out for now.
 
+### 2026-09-15 — Dashboard/Budget Section Split: two groups on one screen, not a new page
+
+**Decision:** When the merged Dashboard screen's UX was found confusing
+(no visual grouping between "current budget status" and "spending
+trends," and the type filter incorrectly reaching into the Budget
+material), the fix is to restructure `DashboardPage.jsx` into two
+visually distinct, labeled groups on the **same** screen and nav entry —
+not to restore a standalone third "Budget" page/route.
+
+**Rationale:** The product owner's own wording asked for a "section," not
+a page, and a separate page would re-fragment navigation that had just
+been deliberately consolidated (see the Spending Dashboard decision
+below). A heading + divider + card-grouping split, combined with scoping
+the type filter to the Widgets group only, was judged sufficient to fix
+the actual complaint (lost legibility and filter over-reach) without
+adding a fourth nav entry.
+
+**Trade-off accepted:** The two groups aren't independently
+collapsible/navigable (no tabs, no separate URLs) — a user can't deep-link
+to just "Budget" or just "Widgets." This was judged acceptable since the
+app has no routing library or deep-linking need at all yet (see "No
+state-management library, no routing library, no CSS framework" above).
+
+**What this doesn't rule out:** If the app later does cross the threshold
+for adding a routing library (more screens, real deep-linking need), the
+two groups could become two routes at that point without any data-model
+change — this decision is about screen/IA structure, not the underlying
+data.
+
+### 2026-09-11 — Spending Dashboard: no charting library, plain CSS bars
+
+**Decision:** The Spending Dashboard's 6-period Spending Trend and Top
+Categories views use plain, proportional-width `<div>` bars styled with
+existing CSS custom properties — not a charting library (no line/pie
+charts).
+
+**Rationale:** The project already carries a standing decision against
+adding dependencies (state-management, routing, CSS framework) unless
+justified by real need (see "No state-management library..." above). A
+trend and a ranked list are both fully expressible as plain proportional
+bars using the same swatch/color-dot technique already established in
+`ExpenseTypesManager`/the Budget breakdown, so this feature doesn't meet
+that bar for a new dependency.
+
+**Trade-off accepted:** No line/pie charts, hover tooltips, or other
+richer charting-library affordances — the trend is a plain bar list, not
+a graphed line. Acceptable because the goal (spot a trend / see what
+dominates at a glance) doesn't require those affordances at this data
+scale (6 periods, a handful of categories).
+
+**What this doesn't rule out:** A real charting library remains an
+explicit option later if the plain-bar version proves visually
+insufficient once used — `docs/requirements.md`'s "Feature: Spending
+Dashboard" already calls this out as a named future enhancement, not a
+closed door.
+
 ### 2026-09-11 — Budget limit scope: overall only, no per-type limits (v1)
 
 **Decision:** The first version of budget-limit tracking supports a single

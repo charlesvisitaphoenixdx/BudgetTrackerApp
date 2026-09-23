@@ -38,15 +38,17 @@ BudgetTrackerApp/
 │   └── icons/               # PWA manifest icons (192px, 512px)
 ├── src/
 │   ├── main.jsx             # React root render
-│   ├── App.jsx              # Top-level: nav between Expenses / Configuration screens
+│   ├── App.jsx              # Top-level: nav between Expenses / Dashboard / Configuration screens
 │   ├── App.css               # Component styles (design tokens as CSS custom properties)
 │   ├── index.css             # Global reset + light/dark color tokens
 │   ├── pages/
 │   │   ├── ConfigurationPage.jsx   # Composes the Configuration screen
-│   │   └── ExpensesPage.jsx        # Composes the Expenses screen
+│   │   ├── ExpensesPage.jsx        # Composes the Expenses screen
+│   │   └── DashboardPage.jsx       # Composes the Dashboard screen (Budget group + Dashboard Widgets group)
 │   ├── components/
 │   │   ├── ExpenseTypesManager.jsx # Expense Types CRUD UI
 │   │   ├── PeriodSettings.jsx      # Start-day setting + period preview UI
+│   │   ├── BudgetLimitSettings.jsx # Monthly Budget Limit setting UI
 │   │   ├── Modal.jsx               # Generic dialog: Escape/backdrop-click to close, scroll lock
 │   │   ├── ExpenseForm.jsx         # Add/Edit expense form + validation wiring (rendered inside Modal)
 │   │   └── ExpenseList.jsx         # Logged-expenses list; click a row to edit, ✕ to delete
@@ -75,6 +77,13 @@ All Configuration data lives in `localStorage` under these keys (see
 - `config.startDay` — `number` (1-31)
 - `config.previewDate` — `string` (`YYYY-MM-DD`), last-used preview date on
   the Period Settings screen; convenience only, not a "real" setting.
+- `config.budgetLimits` — `{ overall: number | null }`. `overall` is the
+  optional monthly budget limit (rounded to 2 decimals), compared against
+  total spending across all expense types for the active period on the
+  Dashboard screen's Budget group. `null`/absent both mean "no limit set" —
+  see `claude/requirements.md`'s "Budget limit scope" decision for why this
+  is an object rather than a bare number (room for a future per-type
+  `byType` map without a migration).
 
 `useLocalStorageState(key, initialValue)` mirrors the `useState` API: it
 lazily reads `localStorage` on mount (falling back to `initialValue` if
@@ -324,17 +333,16 @@ Configured in `vite.config.js` via `VitePWA({...})`:
   than deleted outright, since other sections of this file (e.g. "Project
   structure", "two screens" above) haven't been fully updated to reflect
   the Budget/Dashboard screens yet — treat those as stale until revisited.
-- **(Planned, not yet shipped as of 2026-09-15) Dashboard/Budget visual
-  split.** All of the above is functionally complete, but it currently
-  renders as one undifferentiated stack of cards, and the expense-type
-  filter incorrectly also filters the Budget material (total, indicator,
-  "By Category") — the original standalone Budget screen was never
-  filterable. `docs/requirements.md`'s "Feature: Dashboard/Budget Section
-  Split" specs the fix: two visually distinct groups ("Budget" and
-  "Dashboard Widgets") on the same screen, with the type filter scoped to
-  the widgets group only. Not yet implemented — this is the target state
-  the spec defines, for a DEV to build next, not a claim that it's already
-  in `DashboardPage.jsx`.
+- **(Resolved, 2026-09-15) Dashboard/Budget visual split.** `DashboardPage.jsx`
+  now renders two visually distinct, labeled groups — "Budget" (period nav,
+  Selected Period total/indicator, By Category breakdown, always computed
+  across all expense types) and "Dashboard Widgets" (the expense-type
+  filter, Spending Trend, Top Categories) — separated by a heading and a
+  divider, with the type filter scoped to the Widgets group only. See
+  `docs/requirements.md`'s "Feature: Dashboard/Budget Section Split" for the
+  spec and `docs/qa/QA-report-2026-09-15-dashboard-budget-split.md` (20/20)
+  and `docs/qa/QA-report-2026-09-23-spending-dashboard-retroactive.md`
+  (21/21) for live verification.
 - No currency or locale handling: amounts have no currency symbol, and
   always use `en-US`-style grouping (e.g. `9,999,999.99`) regardless of the
   user's actual locale, via `formatAmount()`.

@@ -51,6 +51,7 @@ BudgetTrackerApp/
 │   │   ├── BudgetLimitSettings.jsx # Monthly Budget Limit setting UI
 │   │   ├── Modal.jsx               # Generic dialog: Escape/backdrop-click to close, scroll lock
 │   │   ├── ExpenseForm.jsx         # Add/Edit expense form + validation wiring (rendered inside Modal)
+│   │   ├── ExpenseFilters.jsx      # Date/amount/search filter controls for the Expenses screen
 │   │   └── ExpenseList.jsx         # Logged-expenses list; click a row to edit, ✕ to delete
 │   ├── hooks/
 │   │   ├── useLocalStorageState.js # useState, but persisted to localStorage
@@ -60,6 +61,8 @@ BudgetTrackerApp/
 │       ├── period.test.js
 │       ├── expenseValidation.js   # Pure Expense Entry form validation
 │       ├── expenseValidation.test.js
+│       ├── expenseFilter.js       # Pure date/amount/search filtering over expense records
+│       ├── expenseFilter.test.js
 │       ├── expensesDb.js          # IndexedDB (idb) access for expense records
 │       └── format.js              # Shared amount/date display formatting
 └── docs/
@@ -257,7 +260,26 @@ where an off-by-one silently ships.
   closes the modal either way — `ExpenseForm` itself has no idea which
   storage operation its `onSubmit` call will trigger. When there are no
   expense types configured, the "+ Add Expense" trigger button is replaced
-  by a fallback message + link to Configuration, same as before.
+  by a fallback message + link to Configuration, same as before. Also holds
+  `filters` (component-local `useState`, initialized via
+  `emptyExpenseFilters()`), passed to `ExpenseFilters` alongside an
+  `updateFilter`/`clearFilters` pair; `filteredExpenses` is a `useMemo`
+  over `filterExpenses(expenses, filters)`, passed to `ExpenseList` in
+  place of the raw `expenses` array. Filter state is not persisted — a new
+  mount always starts from `emptyExpenseFilters()`, same ephemeral-state
+  convention as the Dashboard's expense-type filter.
+- **`ExpenseFilters`**: purely presentational — takes the current `filters`
+  object plus `onChange(field, value)`/`onClear()` callbacks, holds no
+  state of its own. All matching logic lives in the pure, unit-tested
+  `filterExpenses()` (`src/utils/expenseFilter.js`), not in this component.
+  Unlike `ExpenseForm`/`BudgetLimitSettings`, these inputs have no
+  commit-on-blur/revert-on-invalid validation: an unparseable amount is
+  simply ignored by `filterExpenses()` rather than blocked with an inline
+  error, since a filter narrows a read-only view instead of writing data.
+  `ExpenseList` accepts an `emptyMessage` prop (default `"No expenses
+  logged yet."`) so `ExpensesPage` can show a distinct "No expenses match
+  these filters." message when filters are active and the filtered list is
+  empty, without conflating that with a genuinely empty expense history.
 
 ## Styling
 
@@ -301,8 +323,9 @@ Configured in `vite.config.js` via `VitePWA({...})`:
 ## Testing strategy
 
 - **Unit tests** (Vitest): cover the pure logic modules —
-  `src/utils/period.js` (9 tests) and `src/utils/expenseValidation.js`
-  (23 tests). Component behavior and storage (localStorage, IndexedDB) are
+  `src/utils/period.js` (9 tests), `src/utils/expenseValidation.js`
+  (23 tests), and `src/utils/expenseFilter.js` (18 tests). Component
+  behavior and storage (localStorage, IndexedDB) are
   verified via scripted browser testing (see QA reports) rather than
   component tests (e.g. React Testing Library) — that may be worth adding
   once components have more conditional logic worth locking down.
@@ -345,6 +368,15 @@ Configured in `vite.config.js` via `VitePWA({...})`:
   spec and `docs/qa/QA-report-2026-09-15-dashboard-budget-split.md` (20/20)
   and `docs/qa/QA-report-2026-09-23-spending-dashboard-retroactive.md`
   (21/21) for live verification.
+- **(Resolved, 2026-09-23) Expense list filtering.** The Expenses screen
+  has a Filters section (date range, amount range, name/description
+  search) — see `docs/requirements.md`'s "Feature: Expense List
+  Filtering", `src/components/ExpenseFilters.jsx` /
+  `src/utils/expenseFilter.js`, and
+  `docs/qa/QA-report-2026-09-23-expense-list-filtering.md` (22/22,
+  including a live-verified critical regression that an active Expenses
+  filter never affects the Dashboard's totals/indicator/breakdown) for
+  live verification.
 - No currency or locale handling: amounts have no currency symbol, and
   always use `en-US`-style grouping (e.g. `9,999,999.99`) regardless of the
   user's actual locale, via `formatAmount()`.

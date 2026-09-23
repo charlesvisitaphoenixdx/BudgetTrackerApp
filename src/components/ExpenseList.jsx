@@ -1,6 +1,12 @@
 import { formatAmount, formatDate } from "../utils/format.js";
 
-export default function ExpenseList({ expenses, expenseTypes, onDelete, onSelect }) {
+export default function ExpenseList({
+  expenses,
+  expenseTypes,
+  onDelete,
+  onSelect,
+  emptyMessage = "No expenses logged yet.",
+}) {
   const sorted = [...expenses].sort((a, b) => {
     if (a.date !== b.date) return a.date < b.date ? 1 : -1; // most recent date first
     return (b.createdAt || "").localeCompare(a.createdAt || "");
@@ -12,7 +18,7 @@ export default function ExpenseList({ expenses, expenseTypes, onDelete, onSelect
       <p className="sub">Most recent first.</p>
 
       {sorted.length === 0 ? (
-        <p className="empty">No expenses logged yet.</p>
+        <p className="empty">{emptyMessage}</p>
       ) : (
         <div className="expense-list">
           {sorted.map((exp) => {

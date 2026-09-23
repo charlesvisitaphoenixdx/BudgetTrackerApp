@@ -1,18 +1,32 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import ExpenseFilters from "../components/ExpenseFilters.jsx";
 import ExpenseForm from "../components/ExpenseForm.jsx";
 import ExpenseList from "../components/ExpenseList.jsx";
 import Modal from "../components/Modal.jsx";
 import { SEED_TYPES } from "../components/ExpenseTypesManager.jsx";
 import { useExpenses } from "../hooks/useExpenses.js";
 import { useLocalStorageState } from "../hooks/useLocalStorageState.js";
+import { emptyExpenseFilters, filterExpenses, hasActiveExpenseFilters } from "../utils/expenseFilter.js";
 
 export default function ExpensesPage({ onGoToConfiguration }) {
   const [expenseTypes] = useLocalStorageState("config.expenseTypes", SEED_TYPES);
   const { expenses, loading, error, addExpense, editExpense, removeExpense } = useExpenses();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
+  const [filters, setFilters] = useState(emptyExpenseFilters());
 
   const isModalOpen = showAddModal || Boolean(editingExpense);
+
+  function updateFilter(field, value) {
+    setFilters((f) => ({ ...f, [field]: value }));
+  }
+
+  function clearFilters() {
+    setFilters(emptyExpenseFilters());
+  }
+
+  const filtersActive = hasActiveExpenseFilters(filters);
+  const filteredExpenses = useMemo(() => filterExpenses(expenses, filters), [expenses, filters]);
 
   function closeModal() {
     setShowAddModal(false);
@@ -67,12 +81,16 @@ export default function ExpensesPage({ onGoToConfiguration }) {
       {loading ? (
         <p className="sub">Loading…</p>
       ) : (
-        <ExpenseList
-          expenses={expenses}
-          expenseTypes={expenseTypes}
-          onDelete={removeExpense}
-          onSelect={setEditingExpense}
-        />
+        <>
+          <ExpenseFilters filters={filters} onChange={updateFilter} onClear={clearFilters} />
+          <ExpenseList
+            expenses={filteredExpenses}
+            expenseTypes={expenseTypes}
+            onDelete={removeExpense}
+            onSelect={setEditingExpense}
+            emptyMessage={filtersActive ? "No expenses match these filters." : "No expenses logged yet."}
+          />
+        </>
       )}
     </div>
   );

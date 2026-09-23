@@ -269,13 +269,21 @@ where an off-by-one silently ships.
   mount always starts from `emptyExpenseFilters()`, same ephemeral-state
   convention as the Dashboard's expense-type filter.
 - **`ExpenseFilters`**: purely presentational — takes the current `filters`
-  object plus `onChange(field, value)`/`onClear()` callbacks, holds no
-  state of its own. All matching logic lives in the pure, unit-tested
-  `filterExpenses()` (`src/utils/expenseFilter.js`), not in this component.
-  Unlike `ExpenseForm`/`BudgetLimitSettings`, these inputs have no
+  object plus `onChange(field, value)`/`onClear()` callbacks. All matching
+  logic lives in the pure, unit-tested `filterExpenses()`
+  (`src/utils/expenseFilter.js`), not in this component. Unlike
+  `ExpenseForm`/`BudgetLimitSettings`, these inputs have no
   commit-on-blur/revert-on-invalid validation: an unparseable amount is
   simply ignored by `filterExpenses()` rather than blocked with an inline
   error, since a filter narrows a read-only view instead of writing data.
+  The section is collapsed into an accordion (a local `isOpen` `useState`,
+  default `false`) so the controls stay out of the way until needed; that
+  open/closed flag is display-only UI state, kept in this component rather
+  than lifted to `ExpensesPage`, since it doesn't affect filtering and the
+  filter values themselves survive a collapse/expand. When
+  `hasActiveExpenseFilters(filters)` is true, an "Active" badge and a
+  "Clear filters" action stay visible on the header even while collapsed,
+  so a filtered list is never shown with no visible reason why.
   `ExpenseList` accepts an `emptyMessage` prop (default `"No expenses
   logged yet."`) so `ExpensesPage` can show a distinct "No expenses match
   these filters." message when filters are active and the filtered list is

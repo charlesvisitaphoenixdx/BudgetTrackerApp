@@ -376,3 +376,95 @@ layout change, not a behavior regression.
 - **Given** the "By Category" breakdown, **when** I view it, **then** it
   still omits zero-spend types and groups unresolved `expenseTypeId`s
   under "Deleted category", exactly as specified in Story 5.
+
+## Expenses screen: filtering the logged-expenses list
+
+### Story 22 — Filter by date range
+
+**As a** user, **I want to** narrow the logged-expenses list to a date
+range, **so that** I can find expenses from a specific time period without
+scrolling the whole list.
+
+- **Given** the Filters section on the Expenses screen, **when** I set only
+  a "From" date, **then** the list shows only expenses on or after that
+  date.
+- **Given** the Filters section, **when** I set only a "To" date, **then**
+  the list shows only expenses on or before that date.
+- **Given** both "From" and "To" are set, **when** I view the list, **then**
+  only expenses within that range (inclusive on both ends) appear.
+- **Given** I set "From" to a date after "To" (an inverted range), **when**
+  I view the list, **then** it simply shows no matching expenses — no
+  validation error, no correction of the range.
+- **Given** both date fields are empty, **when** I view the list, **then**
+  no date constraint is applied (same as before any filter was set).
+
+### Story 23 — Search by name or description
+
+**As a** user, **I want to** type a word and find any expense whose name or
+description contains it, **so that** I don't have to remember the exact
+category or date of what I'm looking for.
+
+- **Given** the Search field, **when** I type `coffee` and an expense's
+  `name` is "Coffee run", **then** it appears in the filtered list (match
+  is case-insensitive).
+- **Given** the Search field, **when** I type text that only appears in an
+  expense's `description` (not its `name`), **then** that expense still
+  appears — the match checks `name` **or** `description`.
+- **Given** the Search field, **when** I type text that appears in neither
+  an expense's `name` nor its `description`, **then** that expense is
+  excluded from the filtered list.
+- **Given** the Search field, **when** I type `*` or `?` expecting
+  glob-style wildcard behavior, **then** it is treated as a literal
+  character to search for (this feature implements plain substring
+  matching, not glob/regex syntax — see `docs/requirements.md`'s Scope
+  decision for this feature).
+- **Given** the Search field, **when** it's empty or contains only
+  whitespace, **then** no text constraint is applied.
+
+### Story 24 — Filter by amount range
+
+**As a** user, **I want to** narrow the list to expenses within an amount
+range, **so that** I can find, e.g., "that big purchase" or "small
+day-to-day expenses" without scanning every row.
+
+- **Given** the Filters section, **when** I set only a "Min" amount,
+  **then** the list shows only expenses with `amount >= Min`.
+- **Given** the Filters section, **when** I set only a "Max" amount,
+  **then** the list shows only expenses with `amount <= Max`.
+- **Given** both "Min" and "Max" are set, **when** I view the list, **then**
+  only expenses within that range (inclusive on both ends) appear.
+- **Given** I set "Min" higher than "Max" (an inverted range), **when** I
+  view the list, **then** it simply shows no matching expenses — no
+  validation error.
+- **Given** both amount fields are empty, **when** I view the list,
+  **then** no amount constraint is applied.
+
+### Story 25 — Filters combine, clear, and don't affect anything else
+
+**As a** user, **I want to** combine multiple filters and clear them
+easily, **so that** I can narrow down precisely and get back to the full
+list without re-entering anything by hand.
+
+- **Given** I set a date range, a search term, **and** an amount range at
+  the same time, **when** I view the list, **then** only expenses
+  satisfying **all** of them appear (AND logic, not OR).
+- **Given** any combination of active filters, **when** I click "Clear
+  filters," **then** all filter inputs reset to empty and the full,
+  unfiltered logged-expenses list reappears, in its original most-recent-
+  first order.
+- **Given** active filters that match zero expenses, **when** I view the
+  list, **then** I see a message distinguishing "no expenses match these
+  filters" from the existing "no expenses logged yet" message (which means
+  there are no expenses at all).
+- **Given** an active filter that narrows the list, **when** I view the
+  remaining rows, **then** they keep the existing most-recent-first sort
+  order (with the `createdAt` same-day tiebreaker) — filtering never
+  reorders the list.
+- **Given** active filters, **when** I navigate to another screen (e.g.
+  Dashboard or Configuration) and back to Expenses, **then** all filters
+  have reset to empty — filter state is not persisted.
+- **Given** active filters that hide a particular expense from the list,
+  **when** I check the Dashboard screen, **then** its Budget group total,
+  indicator, and By Category breakdown, and its Dashboard Widgets'
+  Spending Trend and Top Categories, are all completely unaffected — this
+  filter is local to the Expenses screen only.

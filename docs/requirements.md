@@ -533,3 +533,145 @@ increment only narrows *which* sections `filterId` affects.
 | Zero expenses in the selected period (Budget group) | Unchanged from existing behavior: `$0.00` total, "No expenses logged in this period yet." in By Category, and the indicator still evaluates (`"none"`/`"under"` at `$0.00`). |
 | Zero expenses across the whole 6-period trend window (Widgets group) | Unchanged: all 6 trend rows show `$0.00`/empty bars, Top Categories shows "No spending yet." |
 | Fewer than 6 real periods of history | Unchanged: all 6 trend slots still render via `periodFor`/`shiftPeriod`. |
+
+## Feature: Expense List Filtering
+
+### Problem
+
+`ExpenseList` (Expenses screen) shows every logged expense, most recent
+first, with no way to narrow the list. As the number of logged expenses
+grows, finding a specific past expense — "that ~$45 entertainment expense
+from last month," "everything with 'coffee' in the name," "what did I
+spend between these two dates" — means manually scanning the whole list.
+This is distinct from the Dashboard's budget-period aggregates: a user
+wants to *find specific transactions*, not see a total. Requested
+directly: filter by date range, wildcard search on name or description,
+and amount range.
+
+### Scope decision: client-side, in-memory filtering, scoped to the Expenses screen only; "wildcard" means a plain substring match, not glob/regex syntax
+
+**Client-side, in-memory, no new persistence.** This follows the same
+precedent already established by the Budget Period Spending Summary
+feature — "an in-memory filter over `getAllExpenses()` is sufficient at
+expected data volumes" (see that feature's Data model section above). The
+full expense list is already loaded into memory for `ExpenseList` today;
+filtering narrows what's *displayed*, computed fresh on every render, with
+no new IndexedDB index or query needed (the existing `by-date` index
+remains unused by this feature, same as today).
+
+**Scoped to the Expenses screen only.** The Dashboard already has its own
+expense-type filter, serving a different job (spotting a category's trend
+across periods). This feature does not touch `DashboardPage.jsx` in any
+way — the Budget group's totals/indicator/breakdown and the Widgets
+group's trend/Top Categories all continue to compute over the *full,
+unfiltered* expense set exactly as today. Filtering the Expenses list is
+a separate, local concern from filtering the Dashboard.
+
+**"Wildcard search" means a plain, case-insensitive substring match — not
+literal glob/regex syntax.** The ask used the word "wildcard," which is
+ambiguous between (a) a colloquial "search box" (what most users mean) and
+(b) literal `*`/`?` pattern matching. This spec makes an explicit call
+rather than guessing silently: implement (a), a plain substring match
+against `name` OR `description`, same case-insensitivity convention
+already used by `ExpenseTypesManager`'s duplicate-name check
+(`.toLowerCase()`). If literal glob/regex syntax turns out to be what was
+actually wanted, that's a follow-up scope conversation, not an assumption
+baked in here.
+
+**Filter state is ephemeral, not persisted.** Same convention as the
+Dashboard's expense-type filter: filter inputs live in `ExpensesPage`'s
+local `useState`, reset to "no filters" whenever the screen is
+unmounted/remounted (navigating away and back), no new `localStorage` key.
+
+**Filter inputs are unvalidated, unlike data-entry fields.** `ExpenseForm`
+and `BudgetLimitSettings` use commit-on-blur + revert-on-invalid-with-
+inline-error because they *write* data — an invalid entry there must never
+silently corrupt storage. A filter field doesn't write anything; it only
+narrows a read-only view. So filter inputs use native `type="date"`/
+`type="number"` constraints only, with no separate validated-with-error
+layer: an unparseable or out-of-range value is simply treated as "this
+filter dimension isn't currently narrowing the list," never a blocking
+inline error. This is a deliberate departure from the write-path
+validation pattern, not an oversight — call it out in review if it looks
+inconsistent, but it's inconsistent on purpose.
+
+### In scope (this increment)
+
+1. A **Filters** section on the Expenses screen, above "Logged Expenses,"
+   with three independent, optional dimensions:
+   - **Date range** — "From" and "To" date inputs (either, both, or
+     neither can be set). An expense matches if its `date` is `>= From`
+     (when set) and `<= To` (when set), inclusive on both ends.
+   - **Amount range** — "Min" and "Max" number inputs (either, both, or
+     neither can be set). An expense matches if its `amount` is `>= Min`
+     (when set) and `<= Max` (when set), inclusive on both ends.
+   - **Search** — a single text input. An expense matches if the search
+     text (trimmed, case-insensitive) is a substring of its `name` **or**
+     its `description`. Blank/whitespace-only search text applies no text
+     filter.
+2. All three dimensions combine with **AND** logic: an expense must
+   satisfy every dimension that currently has a value to appear in the
+   filtered list. A dimension with no value set doesn't constrain the
+   result at all.
+3. The filtered list keeps the existing sort order (most recent `date`
+   first, `createdAt` descending as a same-day tiebreaker) — filtering
+   narrows the list, it never reorders it.
+4. A **Clear filters** control that resets all three dimensions to empty
+   in one action.
+5. A distinct empty-state message when one or more filters are active and
+   zero expenses match (e.g. "No expenses match these filters."), separate
+   from the existing "No expenses logged yet." message (which means there
+   are no expenses *at all*, filtered or not).
+
+### Out of scope (explicitly, this increment)
+
+- **Literal wildcard/glob or regex syntax** (`*`, `?`, character classes)
+  in the search field — see the Scope decision above.
+- **Filtering by expense type/category on the Expenses screen.** The
+  Dashboard already has a type filter for its own purpose; duplicating one
+  here is a plausible future enhancement, not part of this increment.
+- **Persisting filter state** across navigation or reload — ephemeral,
+  same as the Dashboard's type filter.
+- **Saved/named filter presets.**
+- **Exporting the filtered results.**
+- **Changing the sort order** (e.g. sort by amount) — date-descending
+  stays the only sort; filters only narrow, they don't reorder.
+- **Cross-validating an inverted range** (From after To, Min above Max).
+  An inverted range isn't blocked or warned about — it simply yields zero
+  matches, the same as any other combination of filters nothing satisfies.
+- **Any change to `DashboardPage.jsx`'s aggregation** — the Budget group
+  and Dashboard Widgets group both keep computing over the complete,
+  unfiltered expense set; this feature is entirely local to the Expenses
+  screen.
+
+### Data model additions
+
+None. No new `localStorage` keys, no IndexedDB schema change. This feature
+only reads the same `expenses` array `ExpensesPage`/`useExpenses()`
+already load, and filters it in memory on each render. Filter values
+(`fromDate`, `toDate`, `minAmount`, `maxAmount`, `searchText`) are
+component-local `useState` in `ExpensesPage`, non-persisted.
+
+### Filter matching rules
+
+| Dimension | Matches when | Notes |
+|---|---|---|
+| Date — From | `expense.date >= fromDate` | Ignored (no constraint) if blank. |
+| Date — To | `expense.date <= toDate` | Ignored if blank. Independent of From — an inverted range (`fromDate > toDate`) is not corrected or warned about; it simply matches nothing. |
+| Amount — Min | `expense.amount >= minAmount` | Ignored if blank or unparseable. |
+| Amount — Max | `expense.amount <= maxAmount` | Ignored if blank or unparseable. Independent of Min, same inverted-range handling as dates. |
+| Search | `name` **or** `description` contains the trimmed search text, case-insensitive | Blank/whitespace-only search applies no constraint. An empty `description` simply never matches on its own — the expense still matches if `name` does. |
+| No filters set | Every expense matches (identical to today's unfiltered list) | Baseline / default state on every mount. |
+
+### Backlog pass — `docs/TECHNICAL.md` "Known limitations / open items"
+
+| Item | Disposition | Reasoning |
+|---|---|---|
+| No cross-device sync | Out of scope (standing) | Unrelated — this feature is entirely client-side/in-memory, doesn't touch persistence or sync at all. |
+| No automated component/UI test suite | Future story (not this increment) | Unrelated; the filter *logic* (date/amount/text matching) gets pure-function Vitest coverage per this project's existing pattern, and the UI gets a scripted-browser QA pass, same as every other feature — no new test-infra gap introduced. |
+| No CI PR-check workflow | Future story (not this increment) | Unrelated. |
+| Placeholder PWA icons | Future story, low priority | Unrelated. |
+| Expense Types: `name` + `color` only, per-type limits rejected | Unrelated | This feature filters existing expense records; it doesn't touch expense-type shape or budget limits at all. |
+| No currency/locale handling | Unrelated (not addressed) | The amount-range inputs are plain numbers, same convention as the rest of the app (`formatAmount()`); this feature doesn't change formatting. |
+| No expense-type snapshot on expense records | Unrelated | Filtering doesn't read or display category name/color differently than `ExpenseList` already does. |
+| **No way to search/filter the logged-expenses list** | **This increment** | This item wasn't previously on the Known Limitations list (the list predates any request for this capability) — it's added here as the gap this feature closes, per this project's own "don't skip the backlog pass" convention. |

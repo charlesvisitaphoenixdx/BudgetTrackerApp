@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ExpenseFilters from "../components/ExpenseFilters.jsx";
 import ExpenseForm from "../components/ExpenseForm.jsx";
 import ExpenseList from "../components/ExpenseList.jsx";
@@ -14,6 +14,15 @@ export default function ExpensesPage({ onGoToConfiguration }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
   const [filters, setFilters] = useState(emptyExpenseFilters());
+
+  // If the type currently selected in the Filters section is deleted from
+  // Configuration, fall back to "All types" rather than silently filtering
+  // by a stale id - same convention as DashboardPage's own type filter.
+  useEffect(() => {
+    if (filters.expenseTypeId !== "" && !expenseTypes.some((t) => String(t.id) === filters.expenseTypeId)) {
+      setFilters((f) => ({ ...f, expenseTypeId: "" }));
+    }
+  }, [expenseTypes, filters.expenseTypeId]);
 
   const isModalOpen = showAddModal || Boolean(editingExpense);
 
@@ -82,7 +91,12 @@ export default function ExpensesPage({ onGoToConfiguration }) {
         <p className="sub">Loading…</p>
       ) : (
         <>
-          <ExpenseFilters filters={filters} onChange={updateFilter} onClear={clearFilters} />
+          <ExpenseFilters
+            filters={filters}
+            onChange={updateFilter}
+            onClear={clearFilters}
+            expenseTypes={expenseTypes}
+          />
           <ExpenseList
             expenses={filteredExpenses}
             expenseTypes={expenseTypes}

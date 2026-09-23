@@ -630,6 +630,9 @@ inconsistent, but it's inconsistent on purpose.
 - **Filtering by expense type/category on the Expenses screen.** The
   Dashboard already has a type filter for its own purpose; duplicating one
   here is a plausible future enhancement, not part of this increment.
+  > **Addendum (2026-09-23):** this deferred item is now in scope — see
+  > "Addendum (2026-09-23): Filter by expense type" at the end of this
+  > feature's section below.
 - **Persisting filter state** across navigation or reload — ephemeral,
   same as the Dashboard's type filter.
 - **Saved/named filter presets.**
@@ -675,3 +678,85 @@ component-local `useState` in `ExpensesPage`, non-persisted.
 | No currency/locale handling | Unrelated (not addressed) | The amount-range inputs are plain numbers, same convention as the rest of the app (`formatAmount()`); this feature doesn't change formatting. |
 | No expense-type snapshot on expense records | Unrelated | Filtering doesn't read or display category name/color differently than `ExpenseList` already does. |
 | **No way to search/filter the logged-expenses list** | **This increment** | This item wasn't previously on the Known Limitations list (the list predates any request for this capability) — it's added here as the gap this feature closes, per this project's own "don't skip the backlog pass" convention. |
+
+### Addendum (2026-09-23): Filter by expense type
+
+**Problem.** The Filters section above deliberately deferred filtering by
+expense type/category, since the Dashboard already had a type filter for
+a different job (spotting a category's trend across periods). That
+deferral named this as "a plausible future enhancement" — this addendum
+is that enhancement: users want to narrow the Expenses screen's list down
+to a single category the same way they can already narrow it by date,
+amount, or text.
+
+**Scope decision: reuse the Dashboard's existing type-filter conventions
+exactly, add it as a fourth AND-combined dimension, no new persistence.**
+This rests on the same client-side/in-memory-filtering decision as the
+rest of this feature (see the Scope decision above) — nothing here
+touches `claude/requirements.md`'s standing decisions. Concretely, this
+addendum makes the same three calls the Dashboard's type filter already
+made (docs/user-stories.md Stories 16 and 18), for consistency rather
+than inventing a second convention for the same concept:
+1. **Single-select**, not multi-select: one `<select>`, default option
+   "All types," followed by one `<option>` per currently configured
+   expense type (`value={String(t.id)}`) — matching
+   `DashboardPage.jsx`'s `#dashboardFilter` exactly.
+2. **Deleted-selected-type fallback**: if the expense type currently
+   selected in this filter is deleted from Configuration, the filter
+   resets to "All types" (a `useEffect` watching `expenseTypes`, same
+   pattern as `DashboardPage.jsx`), rather than silently continuing to
+   filter by a stale id.
+3. **No "Deleted category" option in the dropdown.** Expenses whose
+   `expenseTypeId` no longer matches any configured type are simply never
+   selectable via this filter on their own — same as the Dashboard. They
+   remain visible (and labeled "Deleted category") whenever this filter
+   is at its "All types" default, exactly like every other unfiltered
+   view in the app already handles that fallback.
+
+This feature remains entirely local to the Expenses screen, exactly like
+the rest of the Filters section: it still does not touch
+`DashboardPage.jsx`'s own, separate type filter or its aggregation in any
+way (see "Any change to `DashboardPage.jsx`'s aggregation" in Out of
+scope above, which continues to hold).
+
+**In scope (this addendum)**
+
+1. A fourth Filters dimension, **Expense type** — a `<select>` as
+   described above, defaulting to "All types."
+2. It combines with the existing three dimensions via the same **AND**
+   logic as items 1-2 of "In scope (this increment)" above: an expense
+   must match the selected type (when not "All types") *and* every other
+   currently-set dimension to appear in the filtered list.
+3. **Clear filters** resets this dimension to "All types" along with the
+   other three, in the same single action.
+4. The deleted-selected-type reset behavior described in the Scope
+   decision above.
+
+**Out of scope (still, this addendum)**
+
+- **Multi-select / "any of these categories."** Single-select only, same
+  as the Dashboard's filter — selecting more than one category at a time
+  is a plausible further enhancement, not part of this addendum.
+- Everything already listed under "Out of scope (explicitly, this
+  increment)" above continues to hold unchanged (no glob/regex search, no
+  persistence, no saved presets, no export, no sort-order change, no
+  inverted-range validation, no change to `DashboardPage.jsx`).
+
+**Data model additions:** none. This dimension reads the same
+`expenseTypes` array (`config.expenseTypes`, already loaded by
+`ExpensesPage` for `ExpenseForm`/`ExpenseList`) and the same `expenses`
+array as every other dimension; the new filter value
+(`expenseTypeId`, following `emptyExpenseFilters()`'s existing naming)
+is component-local `useState` in `ExpensesPage`, non-persisted, same as
+`fromDate`/`toDate`/`minAmount`/`maxAmount`/`searchText`.
+
+**Filter matching rules addition:**
+
+| Dimension | Matches when | Notes |
+|---|---|---|
+| Expense type | `expense.expenseTypeId === expenseTypeId` (as a number) | Ignored (no constraint) when the filter is "All types." No option is ever offered for a deleted type — see the Scope decision above. |
+
+**Backlog pass addendum:** the "Filtering by expense type/category on the
+Expenses screen" out-of-scope item from the original Backlog pass table
+above moves from "deferred, not part of this increment" to **this
+addendum** — it's the same gap, now closed.

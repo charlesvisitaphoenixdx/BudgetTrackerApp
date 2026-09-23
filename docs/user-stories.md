@@ -445,13 +445,19 @@ day-to-day expenses" without scanning every row.
 easily, **so that** I can narrow down precisely and get back to the full
 list without re-entering anything by hand.
 
+> **Updated 2026-09-23:** the Filters section gained a fourth dimension,
+> expense type — see Story 26. It's an AND-combined dimension like the
+> other three, so every "combine"/"clear" criterion below already applies
+> to it too; the bullets aren't rewritten to spell that out one by one.
+
 - **Given** I set a date range, a search term, **and** an amount range at
   the same time, **when** I view the list, **then** only expenses
   satisfying **all** of them appear (AND logic, not OR).
 - **Given** any combination of active filters, **when** I click "Clear
-  filters," **then** all filter inputs reset to empty and the full,
-  unfiltered logged-expenses list reappears, in its original most-recent-
-  first order.
+  filters," **then** all filter inputs reset to empty (the expense-type
+  filter included, back to "All types") and the full, unfiltered
+  logged-expenses list reappears, in its original most-recent-first
+  order.
 - **Given** active filters that match zero expenses, **when** I view the
   list, **then** I see a message distinguishing "no expenses match these
   filters" from the existing "no expenses logged yet" message (which means
@@ -468,3 +474,36 @@ list without re-entering anything by hand.
   indicator, and By Category breakdown, and its Dashboard Widgets'
   Spending Trend and Top Categories, are all completely unaffected — this
   filter is local to the Expenses screen only.
+
+### Story 26 — Filter by expense type
+
+**As a** user, **I want to** narrow the logged-expenses list down to a
+single category, **so that** I can review just that category's spending
+without also using the date/amount/search fields to get there.
+
+- **Given** the Filters section, **when** I open the expense-type
+  dropdown, **then** I see "All types" (selected by default) followed by
+  one entry per currently configured expense type — same convention as
+  the Dashboard's own type filter (Story 16).
+- **Given** I select "Groceries," **when** I view the list, **then** only
+  expenses whose `expenseTypeId` matches Groceries appear.
+- **Given** a type is selected **and** I also have a date range, amount
+  range, or search term set, **when** I view the list, **then** only
+  expenses satisfying the selected type **and** every other active
+  dimension appear (AND logic, same as Story 25).
+- **Given** a type is selected, **when** I switch the dropdown back to
+  "All types" (directly, or via "Clear filters"), **then** the type
+  constraint is removed and the list reflects only whatever other filters
+  remain active.
+- **Given** I have a type selected in this filter, **when** I go to
+  Configuration and delete that expense type, then return to the
+  Expenses screen, **then** this filter has reset to "All types" (its
+  dropdown no longer has that type as an option to show selected) rather
+  than silently continuing to filter by a type id that no longer exists
+  — same edge case and same fix as the Dashboard's filter (Story 18).
+- **Given** some expenses' `expenseTypeId` no longer matches any
+  configured type, **when** this filter is "All types," **then** those
+  expenses remain visible in the list (still labeled "Deleted category"
+  wherever the list already shows that, per Story 5); **when** I open the
+  dropdown, **then** there is no "Deleted category" option — those
+  expenses can only be seen via "All types," not isolated on their own.

@@ -20,8 +20,13 @@ import { hasActiveExpenseFilters } from "../utils/expenseFilter.js";
  * commit-on-blur/revert-on-invalid validation - they narrow a read-only
  * view rather than write data, so an unparseable value is simply ignored by
  * filterExpenses() rather than blocked with an inline error.
+ *
+ * The expense-type dropdown takes the current `expenseTypes` list as a prop
+ * (same as DashboardPage's own, separate type filter) rather than reading
+ * config storage itself - resolving a stale-selected-type is ExpensesPage's
+ * job (composition-root state), not this component's.
  */
-export default function ExpenseFilters({ filters, onChange, onClear }) {
+export default function ExpenseFilters({ filters, onChange, onClear, expenseTypes }) {
   const [isOpen, setIsOpen] = useState(false);
   const panelId = useId();
   const filtersActive = hasActiveExpenseFilters(filters);
@@ -51,9 +56,24 @@ export default function ExpenseFilters({ filters, onChange, onClear }) {
 
       {isOpen && (
         <div id={panelId}>
-          <p className="sub">Narrow the list below by date, amount, or a name/description search.</p>
+          <p className="sub">Narrow the list below by expense type, date, amount, or a name/description search.</p>
 
           <div className="form-grid">
+            <div className="field">
+              <label htmlFor="filterExpenseType">Expense type</label>
+              <select
+                id="filterExpenseType"
+                value={filters.expenseTypeId}
+                onChange={(e) => onChange("expenseTypeId", e.target.value)}
+              >
+                <option value="">All types</option>
+                {expenseTypes.map((t) => (
+                  <option key={t.id} value={String(t.id)}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="field">
               <label htmlFor="filterFromDate">From</label>
               <input

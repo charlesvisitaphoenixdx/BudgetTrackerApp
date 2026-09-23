@@ -2,10 +2,24 @@ import { describe, it, expect } from "vitest";
 import { filterExpenses, emptyExpenseFilters, hasActiveExpenseFilters } from "./expenseFilter.js";
 
 const expenses = [
-  { id: "1", name: "Coffee run", description: "", amount: 4.5, date: "2026-09-10" },
-  { id: "2", name: "Groceries", description: "Weekly shop, bought coffee beans", amount: 82.3, date: "2026-09-05" },
-  { id: "3", name: "Rent", description: "", amount: 1200, date: "2026-09-01" },
-  { id: "4", name: "Movie night", description: "popcorn and tickets", amount: 25, date: "2026-08-20" },
+  { id: "1", name: "Coffee run", description: "", amount: 4.5, date: "2026-09-10", expenseTypeId: 1 },
+  {
+    id: "2",
+    name: "Groceries",
+    description: "Weekly shop, bought coffee beans",
+    amount: 82.3,
+    date: "2026-09-05",
+    expenseTypeId: 2,
+  },
+  { id: "3", name: "Rent", description: "", amount: 1200, date: "2026-09-01", expenseTypeId: 3 },
+  {
+    id: "4",
+    name: "Movie night",
+    description: "popcorn and tickets",
+    amount: 25,
+    date: "2026-08-20",
+    expenseTypeId: 2,
+  },
 ];
 
 describe("filterExpenses", () => {
@@ -100,6 +114,22 @@ describe("filterExpenses", () => {
     });
   });
 
+  describe("expense type", () => {
+    it("matches only the selected type", () => {
+      const result = filterExpenses(expenses, { ...emptyExpenseFilters(), expenseTypeId: "2" });
+      expect(result.map((e) => e.id)).toEqual(["2", "4"]);
+    });
+
+    it("'All types' (blank) applies no constraint", () => {
+      expect(filterExpenses(expenses, { ...emptyExpenseFilters(), expenseTypeId: "" })).toHaveLength(4);
+    });
+
+    it("matches numerically even when the filter value is a string", () => {
+      const result = filterExpenses(expenses, { ...emptyExpenseFilters(), expenseTypeId: "1" });
+      expect(result.map((e) => e.id)).toEqual(["1"]);
+    });
+  });
+
   describe("combined filters (AND logic)", () => {
     it("requires every active dimension to match", () => {
       const result = filterExpenses(expenses, {
@@ -108,8 +138,20 @@ describe("filterExpenses", () => {
         minAmount: "50",
         maxAmount: "",
         searchText: "coffee",
+        expenseTypeId: "",
       });
       expect(result.map((e) => e.id)).toEqual(["2"]);
+    });
+
+    it("a matching date/amount/search combination still excludes a non-matching expense type", () => {
+      const result = filterExpenses(expenses, {
+        ...emptyExpenseFilters(),
+        fromDate: "2026-09-01",
+        toDate: "2026-09-30",
+        searchText: "coffee",
+        expenseTypeId: "1",
+      });
+      expect(result.map((e) => e.id)).toEqual(["1"]);
     });
   });
 });
@@ -121,5 +163,9 @@ describe("hasActiveExpenseFilters", () => {
 
   it("is true when any field has a value", () => {
     expect(hasActiveExpenseFilters({ ...emptyExpenseFilters(), searchText: "x" })).toBe(true);
+  });
+
+  it("is true when only expenseTypeId is set", () => {
+    expect(hasActiveExpenseFilters({ ...emptyExpenseFilters(), expenseTypeId: "2" })).toBe(true);
   });
 });

@@ -7,7 +7,7 @@
 // these fields narrow a read-only view, they never write data.
 
 export function emptyExpenseFilters() {
-  return { fromDate: "", toDate: "", minAmount: "", maxAmount: "", searchText: "" };
+  return { fromDate: "", toDate: "", minAmount: "", maxAmount: "", searchText: "", expenseTypeId: "" };
 }
 
 export function hasActiveExpenseFilters(filters) {
@@ -20,12 +20,14 @@ export function filterExpenses(expenses, filters) {
   const minAmount = filters.minAmount === "" || filters.minAmount == null ? null : Number(filters.minAmount);
   const maxAmount = filters.maxAmount === "" || filters.maxAmount == null ? null : Number(filters.maxAmount);
   const search = (filters.searchText || "").trim().toLowerCase();
+  const expenseTypeId = filters.expenseTypeId === "" || filters.expenseTypeId == null ? null : Number(filters.expenseTypeId);
 
   return expenses.filter((exp) => {
     if (fromDate && exp.date < fromDate) return false;
     if (toDate && exp.date > toDate) return false;
     if (minAmount != null && !Number.isNaN(minAmount) && Number(exp.amount) < minAmount) return false;
     if (maxAmount != null && !Number.isNaN(maxAmount) && Number(exp.amount) > maxAmount) return false;
+    if (expenseTypeId != null && Number(exp.expenseTypeId) !== expenseTypeId) return false;
     if (search) {
       const name = (exp.name || "").toLowerCase();
       const description = (exp.description || "").toLowerCase();

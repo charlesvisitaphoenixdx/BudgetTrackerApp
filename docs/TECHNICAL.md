@@ -263,27 +263,39 @@ where an off-by-one silently ships.
   by a fallback message + link to Configuration, same as before. Also holds
   `filters` (component-local `useState`, initialized via
   `emptyExpenseFilters()`), passed to `ExpenseFilters` alongside an
-  `updateFilter`/`clearFilters` pair; `filteredExpenses` is a `useMemo`
-  over `filterExpenses(expenses, filters)`, passed to `ExpenseList` in
-  place of the raw `expenses` array. Filter state is not persisted — a new
-  mount always starts from `emptyExpenseFilters()`, same ephemeral-state
-  convention as the Dashboard's expense-type filter.
+  `updateFilter`/`clearFilters` pair and the same `expenseTypes` array
+  already loaded for `ExpenseForm`/`ExpenseList`; `filteredExpenses` is a
+  `useMemo` over `filterExpenses(expenses, filters)`, passed to
+  `ExpenseList` in place of the raw `expenses` array. Filter state is not
+  persisted — a new mount always starts from `emptyExpenseFilters()`, same
+  ephemeral-state convention as the Dashboard's expense-type filter. Also
+  runs a `useEffect` that resets `filters.expenseTypeId` back to `""` ("All
+  types") if the currently-selected type is deleted from Configuration —
+  same stale-id fallback pattern as `DashboardPage`'s own type filter,
+  kept here (not in `ExpenseFilters`) since it's a composition-root
+  concern over data `ExpensesPage` owns.
 - **`ExpenseFilters`**: purely presentational — takes the current `filters`
-  object plus `onChange(field, value)`/`onClear()` callbacks. All matching
-  logic lives in the pure, unit-tested `filterExpenses()`
-  (`src/utils/expenseFilter.js`), not in this component. Unlike
-  `ExpenseForm`/`BudgetLimitSettings`, these inputs have no
-  commit-on-blur/revert-on-invalid validation: an unparseable amount is
-  simply ignored by `filterExpenses()` rather than blocked with an inline
-  error, since a filter narrows a read-only view instead of writing data.
-  The section is collapsed into an accordion (a local `isOpen` `useState`,
-  default `false`) so the controls stay out of the way until needed; that
-  open/closed flag is display-only UI state, kept in this component rather
-  than lifted to `ExpensesPage`, since it doesn't affect filtering and the
-  filter values themselves survive a collapse/expand. When
-  `hasActiveExpenseFilters(filters)` is true, an "Active" badge and a
-  "Clear filters" action stay visible on the header even while collapsed,
-  so a filtered list is never shown with no visible reason why.
+  object, the `expenseTypes` array, and `onChange(field, value)`/
+  `onClear()` callbacks. All matching logic lives in the pure, unit-tested
+  `filterExpenses()` (`src/utils/expenseFilter.js`), not in this
+  component. Four independent, AND-combined dimensions: date range, amount
+  range, name/description search, and expense type (a `<select>` —
+  "All types" plus one `<option>` per configured type, `value={String(t.id)}`
+  — matching `DashboardPage`'s own `#dashboardFilter` dropdown convention
+  exactly, added 2026-09-23; deleted types never appear as an option, same
+  as the Dashboard's). Unlike `ExpenseForm`/`BudgetLimitSettings`, these
+  inputs have no commit-on-blur/revert-on-invalid validation: an
+  unparseable amount is simply ignored by `filterExpenses()` rather than
+  blocked with an inline error, since a filter narrows a read-only view
+  instead of writing data. The section is collapsed into an accordion (a
+  local `isOpen` `useState`, default `false`) so the controls stay out of
+  the way until needed; that open/closed flag is display-only UI state,
+  kept in this component rather than lifted to `ExpensesPage`, since it
+  doesn't affect filtering and the filter values themselves survive a
+  collapse/expand. When `hasActiveExpenseFilters(filters)` is true, an
+  "Active" badge and a "Clear filters" action stay visible on the header
+  even while collapsed, so a filtered list is never shown with no visible
+  reason why.
   `ExpenseList` accepts an `emptyMessage` prop (default `"No expenses
   logged yet."`) so `ExpensesPage` can show a distinct "No expenses match
   these filters." message when filters are active and the filtered list is
@@ -384,7 +396,16 @@ Configured in `vite.config.js` via `VitePWA({...})`:
   `docs/qa/QA-report-2026-09-23-expense-list-filtering.md` (22/22,
   including a live-verified critical regression that an active Expenses
   filter never affects the Dashboard's totals/indicator/breakdown) for
-  live verification.
+  live verification. **Extended and resolved, 2026-09-23:** a fourth
+  dimension, expense type, was added per docs/requirements.md's "Addendum
+  (2026-09-23): Filter by expense type" and Story 26 — same
+  `<select>`/deleted-type-reset convention as `DashboardPage`'s own type
+  filter. Unit-tested (`src/utils/expenseFilter.test.js`, 23 tests) and
+  live-verified — see
+  `docs/qa/QA-report-2026-09-23-expense-type-filter.md` (32/32, including
+  critical regression checks that the Dashboard's totals/indicator/
+  breakdown and its own, separate type filter remain completely
+  unaffected).
 - No currency or locale handling: amounts have no currency symbol, and
   always use `en-US`-style grouping (e.g. `9,999,999.99`) regardless of the
   user's actual locale, via `formatAmount()`.

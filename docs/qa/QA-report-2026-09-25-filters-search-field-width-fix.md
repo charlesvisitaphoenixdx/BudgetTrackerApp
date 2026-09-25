@@ -99,7 +99,7 @@ behavior.
    by direct measurement, not just visual impression.
 2. No new bugs found during regression.
 
-## Conclusion
+## Conclusion (original fix, superseded — see Follow-up below)
 
 The reported UI issue was real, reproduced with an exact pixel
 measurement, and is fixed with a single, narrowly-scoped CSS rule addition
@@ -108,3 +108,42 @@ Description textarea, unaffected — confirmed the selector only targets
 `input[type="text"]`, not `textarea`, and no other `.field-wide` input
 exists in the codebase). Full existing regression suite (32 cases) plus
 the mobile-overflow check pass cleanly. Safe to ship.
+
+## Follow-up (same day, 2026-09-25): "in line with" meant same row, not matching edges
+
+After the fix above shipped, the user clarified the actual ask: "free text
+search should be in line with the max amount field" — i.e. Search
+belongs *beside* Max amount in the same grid row, not on its own full-width
+row underneath it (even a correctly-edge-aligned one). The original fix
+satisfied the letter of "not aligned with Max amount" (matching left/right
+edges) but not what was actually meant.
+
+**Corrected fix:** moved the Search field out of its standalone
+`.field.field-wide` wrapper and into `.form-grid` itself, as the sixth
+item right after Max amount — the grid is exactly 3 rows × 2 columns now
+(Expense type/From, To/Min amount, Max amount/Search), so Search lands in
+the same row as Max amount with no leftover empty cell. Since it's now a
+plain `.form-grid .field input`, it automatically gets the existing
+`width: 100%` grid-cell rule — no new CSS needed. The `.field-wide
+input[type="text"]` rule added by the original fix became dead code (no
+`.field-wide` input exists anymore, only `ExpenseForm`'s Description
+`textarea`) and was removed.
+
+**Re-verification:**
+- Live measurement: `#filterMaxAmount` and `#filterSearch` now report the
+  identical `y` position (478.5) and equal widths (331px each), confirmed
+  side-by-side in the same grid row.
+- Screenshots at 900px (desktop) and 390px (mobile) confirm the same
+  visually: side-by-side on desktop, stacked single-column with no
+  horizontal overflow on mobile (`document.documentElement.scrollWidth >
+  clientWidth` is `false`), same as every other grid field pair.
+- Full 32-case regression suite from
+  `QA-report-2026-09-23-expense-type-filter.md` re-run against the
+  corrected build: 32/32 passed.
+- `npm test`: 55/55 passed (unchanged — no logic touched).
+
+**Corrected conclusion:** Search now sits inline with Max amount, matching
+the user's actual request, verified live (not just visually assumed) with
+matching row position, equal cell width, and no mobile-overflow
+regression. Full regression suite and unit tests remain clean. Safe to
+ship.

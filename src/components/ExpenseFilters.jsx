@@ -116,17 +116,16 @@ export default function ExpenseFilters({ filters, onChange, onClear, expenseType
                 onChange={(e) => onChange("maxAmount", e.target.value)}
               />
             </div>
-          </div>
-
-          <div className="field field-wide">
-            <label htmlFor="filterSearch">Search (name or description)</label>
-            <input
-              id="filterSearch"
-              type="text"
-              placeholder="e.g. coffee"
-              value={filters.searchText}
-              onChange={(e) => onChange("searchText", e.target.value)}
-            />
+            <div className="field">
+              <label htmlFor="filterSearch">Search (name or description)</label>
+              <input
+                id="filterSearch"
+                type="text"
+                placeholder="e.g. coffee"
+                value={filters.searchText}
+                onChange={(e) => onChange("searchText", e.target.value)}
+              />
+            </div>
           </div>
 
           <button type="button" className="secondary" onClick={onClear}>

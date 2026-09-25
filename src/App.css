@@ -307,6 +307,7 @@ button.primary:hover {
 
 .form-grid .field input,
 .form-grid .field select,
+.field-wide input[type="text"],
 .field-wide textarea {
   width: 100%;
 }
